@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Query</title>
+        <link rel="stylesheet" href="style.css">
+        <script src="view.js" defer></script>
+    </head>
+    <body>
+        <header class="topbar">
+            <h1 class="title">Query</h1>
+            <button id="settings-btn" class="settings-btn" title="Settings">&#9881;</button>
+        </header>
+
+        <main id="messages" class="messages"></main>
+
+        <form id="composer" class="composer">
+            <textarea
+                id="input"
+                class="input"
+                placeholder="Type a message... (Enter to send, Shift+Enter for newline)"
+                rows="2"></textarea>
+            <button id="send-btn" type="submit" class="send-btn">Send</button>
+        </form>
+
+        <div id="settings-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Settings</h2>
+                    <button id="settings-close" class="close-btn">&times;</button>
+                </div>
+                <ul class="settings-list">
+                    <li><button data-setting="model">Model selection</button></li>
+                    <li><button data-setting="apikey">API key</button></li>
+                    <li><button data-setting="theme">Appearance / theme</button></li>
+                    <li><button data-setting="clear">Clear conversation</button></li>
+                    <li><button data-setting="about">About</button></li>
+                </ul>
+            </div>
+        </div>
+    </body>
+</html>
