@@ -55,7 +55,7 @@ async function handleSend() {
     try {
         const result = await window.llm.send(text, modelSelect.value || 'openrouter/free')
         pending.classList.remove('pending')
-        pending.textContent = result.ok ? result.reply : `Error: ${result.error}`
+        pending.innerHTML = result.ok ? marked.parse(result.reply) : `Error: ${result.error}`
     } catch (err) {
         pending.classList.remove('pending')
         pending.textContent = `Error: ${err.message}`
