@@ -15,13 +15,17 @@ const { chat } = require('./llmClient');
 const app = express();
 app.use(express.json());
 
+let context = []
+
 app.post('/chat', async (req, res) => {
     try {
         const message = req.body?.message;
         if (typeof message !== 'string' || !message.trim()) {
             return res.status(400).json({ error: 'message is required' });
         }
-        const reply = await chat(message);
+        context.push({ role: 'user', content: message });
+        const reply = await chat(context);
+        context.push({ role: 'assistant', content: reply });
         res.json({ reply });
     } catch (err) {
         console.error(err);

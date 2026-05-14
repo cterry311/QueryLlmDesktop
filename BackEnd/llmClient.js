@@ -2,7 +2,7 @@ const openrouterURL = "https://openrouter.ai/api/v1/chat/completions"
 
 const defaultModel = "openrouter/free"
 
-async function chat(message) {
+async function getResponse(context) {
     const response = await fetch(openrouterURL, {
         method: "POST",
         headers: {
@@ -11,7 +11,7 @@ async function chat(message) {
         },
         body: JSON.stringify({
             model: defaultModel,
-            messages: [{ role: "user", content: message }]
+            messages: context
         })
     });
 
@@ -55,4 +55,4 @@ async function getOpenrouterModels() {
     }
 }
 
-module.exports = { chat, getOpenrouterModels };
+module.exports = { chat: getResponse, getOpenrouterModels };
