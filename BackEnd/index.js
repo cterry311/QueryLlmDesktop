@@ -24,9 +24,12 @@ app.post('/chat', async (req, res) => {
         const message = req.body?.message;
         const model = req.body?.model;
         const routeId = req.body?.routeId;
+        const stream = req.body?.stream ?? false;
+
         if (typeof message !== 'string' || !message.trim()) {
             return res.status(400).json({ error: 'message is required' });
         }
+
         console.log("routeId: " + routeId)
         let route = null;
         let key = null;
@@ -42,12 +45,40 @@ app.post('/chat', async (req, res) => {
 
         context.push({ role: 'user', content: message });
         console.log("route before chat: " + route)
-        const reply = await chat(context, model, route, key);
-        context.push({ role: 'assistant', content: reply });
-        res.json({ reply });
+
+        if (!stream) {
+            const reply = await chat(context, model, route, key, false);
+            context.push({ role: 'assistant', content: reply });
+            return res.json({ reply });
+        }
+
+        // SSE headers
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        const generator = await chat(context, model, route, key, true);
+        let fullReply = '';
+
+        for await (const chunk of generator) {
+            fullReply += chunk;
+            res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
+        }
+
+        // Push the complete reply into context once done
+        context.push({ role: 'assistant', content: fullReply });
+        res.write('data: [DONE]\n\n');
+        res.end();
+
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: err.message });
+        // Can't change status code if we already started streaming
+        if (!res.headersSent) {
+            res.status(500).json({ error: err.message });
+        } else {
+            res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+            res.end();
+        }
     }
 });
 

@@ -52,22 +52,46 @@ async function handleSend() {
     sendBtn.disabled = true
 
     const pending = addBubble('thinking...', 'assistant', { pending: true })
+    let rawReply = '';
+    let firstChunk = true;
+
+
+
+    // Clean up any leftover listeners from a previous message
+    window.llm.removeStreamListeners();
+
+    window.llm.onChunk((chunk) => {
+        if (firstChunk) {
+            pending.textContent = ''; // clear placeholder only on first real chunk
+            firstChunk = false;
+            pending.classList.remove('pending')
+        }
+        rawReply += chunk;
+        pending.innerHTML = marked.parse(rawReply);
+    });
+
+    window.llm.onDone(() => {
+        sendBtn.disabled = false;
+        inputEl.focus();
+    });
+
+    window.llm.onError((err) => {
+        pending.classList.remove('pending');
+        pending.textContent = `Error: ${err}`;
+        sendBtn.disabled = false;
+        inputEl.focus();
+    });
 
     try {
-        console.log("sending message: " + text)
-        console.log("model: " + modelSelect.value)
         const lastPercent = modelSelect.value.lastIndexOf('%');
         const modelId = modelSelect.value.substring(0, lastPercent);
         const routeId = parseInt(modelSelect.value.substring(lastPercent + 1));
-        const result = await window.llm.send(text, modelId || 'openrouter/free', routeId || 0)
-        pending.classList.remove('pending')
-        pending.innerHTML = result.ok ? marked.parse(result.reply) : `Error: ${result.error}`
+        await window.llm.stream(text, modelId || 'openrouter/free', routeId || 0);
     } catch (err) {
         pending.classList.remove('pending')
         pending.textContent = `Error: ${err.message}`
-    } finally {
-        sendBtn.disabled = false
-        inputEl.focus()
+        sendBtn.disabled = false;
+        inputEl.focus();
     }
 }
 
@@ -125,6 +149,8 @@ document.querySelectorAll('#settings-list button').forEach((btn) => {
         const key = btn.dataset.setting
         if (key === 'api') {
             showApiDetails()
+        } else if (key === 'clear') {
+
         } else {
             alert(`Settings: "${key}" — not implemented yet.`)
         }

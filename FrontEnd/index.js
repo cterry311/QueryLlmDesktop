@@ -20,15 +20,35 @@ app.whenReady().then(createWindow)
 
 const BACKEND_URL = 'http://localhost:3000'
 
-async function sendToLLM(message, model, routeId) {
+async function sendToLLM(message, model, routeId, onChunk) {
     const res = await fetch(`${BACKEND_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message, model, routeId })
-    })
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.error || `Backend error ${res.status}`)
-    return data.reply
+        body: JSON.stringify({ message, model, routeId, stream: !!onChunk })
+    });
+
+    if (!onChunk) {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `Backend error ${res.status}`);
+        return data.reply;
+    }
+
+    if (!res.ok) throw new Error(`Backend error ${res.status}`);
+
+    const decoder = new TextDecoder();
+    for await (const chunk of res.body) {
+        const lines = decoder.decode(chunk).split('\n');
+        for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const data = line.slice(6);
+            if (data === '[DONE]') return;
+            try {
+                const parsed = JSON.parse(data);
+                if (parsed.error) throw new Error(parsed.error);
+                if (parsed.chunk) onChunk(parsed.chunk);
+            } catch { }
+        }
+    }
 }
 
 async function listModels() {
@@ -44,7 +64,19 @@ ipcMain.handle('llm:send', async (_event, message, model, routeId) => {
     } catch (err) {
         return { ok: false, error: err.message }
     }
-})
+});
+
+// New streaming handler — sends chunks as events back to the renderer
+ipcMain.handle('llm:stream', async (event, message, model, routeId) => {
+    try {
+        await sendToLLM(message, model, routeId, (chunk) => {
+            event.sender.send('llm:chunk', chunk);
+        });
+        event.sender.send('llm:done');
+    } catch (err) {
+        event.sender.send('llm:error', err.message);
+    }
+});
 
 ipcMain.handle('llm:models', async () => {
     try {
