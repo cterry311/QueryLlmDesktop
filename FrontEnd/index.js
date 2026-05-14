@@ -23,25 +23,17 @@ app.whenReady().then(createWindow)
 // Replace the body of sendToLLM with a real API call later (fetch to OpenAI,
 // Anthropic, a local server, etc.). The renderer talks to this through the
 // 'llm:send' IPC channel exposed by preload.js.
-async function sendToLLM(message, options = {}) {
-    // Example of what a real call might look like:
-    //
-    // const res = await fetch('https://api.example.com/v1/chat', {
-    //     method: 'POST',
-    //     headers: {
-    //         'Content-Type': 'application/json',
-    //         'Authorization': `Bearer ${process.env.LLM_API_KEY}`
-    //     },
-    //     body: JSON.stringify({
-    //         model: options.model ?? 'default-model',
-    //         messages: [{ role: 'user', content: message }]
-    //     })
-    // })
-    // const data = await res.json()
-    // return data.choices[0].message.content
+const BACKEND_URL = 'http://localhost:3000'
 
-    // Dummy response for now:
-    return `(dummy response) You said: "${message}"`
+async function sendToLLM(message) {
+    const res = await fetch(`${BACKEND_URL}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || `Backend error ${res.status}`)
+    return data.reply
 }
 
 ipcMain.handle('llm:send', async (_event, message, options) => {

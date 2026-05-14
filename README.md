@@ -28,7 +28,7 @@ Query/
 │       └── pages/                   # Application views/screens
 │
 ├── backend/                         # Core business logic and orchestration
-│   ├── main.js                      # Entry point, orchestrates backend services
+│   ├── index.js                     # Entry point, orchestrates backend services
 │   ├── llmClient.js                 # OpenAI-compatible API client (OpenRouter + custom)
 │   ├── agentOrchestrator.js         # Agentic loop — think, act, observe
 │   ├── toolHandlers.js              # Safe tool implementations (web search, HTTP, etc.)
