@@ -23,11 +23,26 @@ app.post('/chat', async (req, res) => {
     try {
         const message = req.body?.message;
         const model = req.body?.model;
+        const routeId = req.body?.routeId;
         if (typeof message !== 'string' || !message.trim()) {
             return res.status(400).json({ error: 'message is required' });
         }
+        console.log("routeId: " + routeId)
+        let route = null;
+        let key = null;
+        if (routeId !== 0 && routeId !== undefined) {
+            for (let i = 0; i < addedRoutes.length; i++) {
+                if (addedRoutes[i].routeId === routeId) {
+                    route = addedRoutes[i].url
+                    key = addedRoutes[i].key
+                    console.log("route found: " + route)
+                }
+            }
+        }
+
         context.push({ role: 'user', content: message });
-        const reply = await chat(context, model);
+        console.log("route before chat: " + route)
+        const reply = await chat(context, model, route, key);
         context.push({ role: 'assistant', content: reply });
         res.json({ reply });
     } catch (err) {

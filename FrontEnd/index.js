@@ -20,11 +20,11 @@ app.whenReady().then(createWindow)
 
 const BACKEND_URL = 'http://localhost:3000'
 
-async function sendToLLM(message, model) {
+async function sendToLLM(message, model, routeId) {
     const res = await fetch(`${BACKEND_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message, model })
+        body: JSON.stringify({ message, model, routeId })
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error || `Backend error ${res.status}`)
@@ -38,9 +38,9 @@ async function listModels() {
     return data.models
 }
 
-ipcMain.handle('llm:send', async (_event, message, model) => {
+ipcMain.handle('llm:send', async (_event, message, model, routeId) => {
     try {
-        return { ok: true, reply: await sendToLLM(message, model) }
+        return { ok: true, reply: await sendToLLM(message, model, routeId) }
     } catch (err) {
         return { ok: false, error: err.message }
     }

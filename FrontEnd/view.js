@@ -16,14 +16,13 @@ async function loadModels() {
         })
         for (const m of models) {
             const opt = document.createElement('option')
-            opt.value = m.id
-            opt.routeId = m.routeId
+            opt.value = m.id + "%" + m.routeId
             opt.textContent = `${m.isFree ? 'FREE ' : ''}${m.name || m.id}`
             opt.className = m.routeId !== 0 ? 'model-added' : (m.isFree ? 'model-free' : 'model-paid')
             modelSelect.appendChild(opt)
         }
         const defaultOpt = [...modelSelect.options].find((o) => o.value === 'openrouter/free')
-        modelSelect.value = defaultOpt ? 'openrouter/free' : modelSelect.options[0]?.value || ''
+        modelSelect.value = defaultOpt ? 'openrouter/free%0' : modelSelect.options[0]?.value || ''
     } catch (err) {
         console.error('Failed to load models:', err)
     }
@@ -55,7 +54,12 @@ async function handleSend() {
     const pending = addBubble('thinking...', 'assistant', { pending: true })
 
     try {
-        const result = await window.llm.send(text, modelSelect.value || 'openrouter/free')
+        console.log("sending message: " + text)
+        console.log("model: " + modelSelect.value)
+        const lastPercent = modelSelect.value.lastIndexOf('%');
+        const modelId = modelSelect.value.substring(0, lastPercent);
+        const routeId = parseInt(modelSelect.value.substring(lastPercent + 1));
+        const result = await window.llm.send(text, modelId || 'openrouter/free', routeId || 0)
         pending.classList.remove('pending')
         pending.innerHTML = result.ok ? marked.parse(result.reply) : `Error: ${result.error}`
     } catch (err) {

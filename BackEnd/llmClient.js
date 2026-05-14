@@ -2,11 +2,19 @@ const openrouterURL = "https://openrouter.ai/api/v1/chat/completions"
 
 const defaultModel = "openrouter/free"
 
-async function getResponse(context, model) {
-    const response = await fetch(openrouterURL, {
+async function getResponse(context, model, route, key) {
+    console.log("route: " + route)
+    if (route === null) {
+        route = openrouterURL
+    }
+    if (key === null) {
+        key = process.env.OPEN_ROUTER
+    }
+    console.log("getting response from: " + route + " and model: " + model)
+    const response = await fetch(route, {
         method: "POST",
         headers: {
-            "Authorization": `Bearer ${process.env.OPEN_ROUTER}`,
+            "Authorization": `Bearer ${key}`,
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
