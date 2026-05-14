@@ -10,14 +10,16 @@ async function loadModels() {
         if (!result.ok) throw new Error(result.error)
         modelSelect.innerHTML = ''
         const models = result.models.slice().sort((a, b) => {
+            if (a.routeId !== b.routeId) return b.routeId - a.routeId
             if (a.isFree !== b.isFree) return a.isFree ? -1 : 1
             return (a.name || a.id).localeCompare(b.name || b.id)
         })
         for (const m of models) {
             const opt = document.createElement('option')
             opt.value = m.id
+            opt.routeId = m.routeId
             opt.textContent = `${m.isFree ? 'FREE ' : ''}${m.name || m.id}`
-            opt.className = m.isFree ? 'model-free' : 'model-paid'
+            opt.className = m.routeId !== 0 ? 'model-added' : (m.isFree ? 'model-free' : 'model-paid')
             modelSelect.appendChild(opt)
         }
         const defaultOpt = [...modelSelect.options].find((o) => o.value === 'openrouter/free')
@@ -230,6 +232,7 @@ apiSaveBtn.addEventListener('click', async () => {
     try {
         const result = await window.llm.setApiConfig(config)
         if (!result || !result.ok) throw new Error((result && result.error) || 'unknown error')
+        await loadModels()
         showBaseSettings()
     } catch (err) {
         alert(`Failed to save API config: ${err.message}`)

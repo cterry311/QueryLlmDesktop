@@ -56,9 +56,12 @@ ipcMain.handle('llm:models', async () => {
 
 // Received from the renderer when the user saves API Details in the settings
 // panel. `config` shape:
-//   [{ url: string, key: string, models: string[] }, ...]
-// TODO: implement persistence / use of these credentials.
 ipcMain.handle('api:set-config', async (_event, config) => {
     console.log('api:set-config received:', JSON.stringify(config, null, 2))
+    await fetch(`${BACKEND_URL}/models`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+    })
     return { ok: true }
 })

@@ -55,6 +55,7 @@ body {
 
 .model-select option.model-free { color: #4ade80; }
 .model-select option.model-paid { color: #f87171; }
+.model-select option.model-added { color: #fa6cf7; }
 
 .messages {
     flex: 1;
