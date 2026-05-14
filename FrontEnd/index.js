@@ -25,20 +25,35 @@ app.whenReady().then(createWindow)
 // 'llm:send' IPC channel exposed by preload.js.
 const BACKEND_URL = 'http://localhost:3000'
 
-async function sendToLLM(message) {
+async function sendToLLM(message, model) {
     const res = await fetch(`${BACKEND_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message })
+        body: JSON.stringify({ message, model })
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error || `Backend error ${res.status}`)
     return data.reply
 }
 
-ipcMain.handle('llm:send', async (_event, message, options) => {
+async function listModels() {
+    const res = await fetch(`${BACKEND_URL}/models`)
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || `Backend error ${res.status}`)
+    return data.models
+}
+
+ipcMain.handle('llm:send', async (_event, message, model) => {
     try {
-        return { ok: true, reply: await sendToLLM(message, options) }
+        return { ok: true, reply: await sendToLLM(message, model) }
+    } catch (err) {
+        return { ok: false, error: err.message }
+    }
+})
+
+ipcMain.handle('llm:models', async () => {
+    try {
+        return { ok: true, models: await listModels() }
     } catch (err) {
         return { ok: false, error: err.message }
     }

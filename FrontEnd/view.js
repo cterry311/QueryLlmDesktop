@@ -2,6 +2,32 @@ const messagesEl = document.getElementById('messages')
 const composerEl = document.getElementById('composer')
 const inputEl = document.getElementById('input')
 const sendBtn = document.getElementById('send-btn')
+const modelSelect = document.getElementById('model-select')
+
+async function loadModels() {
+    try {
+        const result = await window.llm.models()
+        if (!result.ok) throw new Error(result.error)
+        modelSelect.innerHTML = ''
+        const models = result.models.slice().sort((a, b) => {
+            if (a.isFree !== b.isFree) return a.isFree ? -1 : 1
+            return (a.name || a.id).localeCompare(b.name || b.id)
+        })
+        for (const m of models) {
+            const opt = document.createElement('option')
+            opt.value = m.id
+            opt.textContent = `${m.isFree ? 'FREE ' : ''}${m.name || m.id}`
+            opt.className = m.isFree ? 'model-free' : 'model-paid'
+            modelSelect.appendChild(opt)
+        }
+        const defaultOpt = [...modelSelect.options].find((o) => o.value === 'openrouter/free')
+        modelSelect.value = defaultOpt ? 'openrouter/free' : modelSelect.options[0]?.value || ''
+    } catch (err) {
+        console.error('Failed to load models:', err)
+    }
+}
+
+loadModels()
 
 const settingsBtn = document.getElementById('settings-btn')
 const settingsModal = document.getElementById('settings-modal')
@@ -27,7 +53,7 @@ async function handleSend() {
     const pending = addBubble('thinking...', 'assistant', { pending: true })
 
     try {
-        const result = await window.llm.send(text)
+        const result = await window.llm.send(text, modelSelect.value || 'openrouter/free')
         pending.classList.remove('pending')
         pending.textContent = result.ok ? result.reply : `Error: ${result.error}`
     } catch (err) {

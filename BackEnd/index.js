@@ -10,7 +10,7 @@ if (fs.existsSync(envPath)) {
     }
 }
 
-const { chat } = require('./llmClient');
+const { chat, getOpenrouterModels } = require('./llmClient');
 
 const app = express();
 app.use(express.json());
@@ -20,13 +20,24 @@ let context = []
 app.post('/chat', async (req, res) => {
     try {
         const message = req.body?.message;
+        const model = req.body?.model;
         if (typeof message !== 'string' || !message.trim()) {
             return res.status(400).json({ error: 'message is required' });
         }
         context.push({ role: 'user', content: message });
-        const reply = await chat(context);
+        const reply = await chat(context, model);
         context.push({ role: 'assistant', content: reply });
         res.json({ reply });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/models', async (_req, res) => {
+    try {
+        const models = await getOpenrouterModels();
+        res.json({ models });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });
