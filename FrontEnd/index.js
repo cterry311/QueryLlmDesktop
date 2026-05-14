@@ -17,12 +17,7 @@ function createWindow() {
 
 app.whenReady().then(createWindow)
 
-// ---------------------------------------------------------------------------
-// LLM API hook
-// ---------------------------------------------------------------------------
-// Replace the body of sendToLLM with a real API call later (fetch to OpenAI,
-// Anthropic, a local server, etc.). The renderer talks to this through the
-// 'llm:send' IPC channel exposed by preload.js.
+
 const BACKEND_URL = 'http://localhost:3000'
 
 async function sendToLLM(message, model) {
@@ -57,4 +52,13 @@ ipcMain.handle('llm:models', async () => {
     } catch (err) {
         return { ok: false, error: err.message }
     }
+})
+
+// Received from the renderer when the user saves API Details in the settings
+// panel. `config` shape:
+//   [{ url: string, key: string, models: string[] }, ...]
+// TODO: implement persistence / use of these credentials.
+ipcMain.handle('api:set-config', async (_event, config) => {
+    console.log('api:set-config received:', JSON.stringify(config, null, 2))
+    return { ok: true }
 })

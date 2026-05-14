@@ -183,3 +183,127 @@ body {
 }
 
 .settings-list button:hover { background: #3f4147; }
+
+.settings-list.hidden, .api-details.hidden, .back-btn.hidden { display: none; }
+
+.back-btn {
+    background: transparent;
+    color: #e6e6e6;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    margin-right: 8px;
+    padding: 0 6px;
+}
+.back-btn:hover { color: #fff; }
+
+.modal-header h2 { flex: 1; }
+
+.api-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.api-pairs {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.api-pair {
+    border: 1px solid #3f4147;
+    border-radius: 8px;
+    padding: 10px;
+    background: #1e1f22;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.api-pair-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.api-pair-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: #b8b9bd;
+}
+
+.api-url-input, .api-key-input, .api-model-input {
+    width: 100%;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #3f4147;
+    background: #2b2d31;
+    color: #e6e6e6;
+    font-size: 13px;
+    font-family: inherit;
+}
+
+.api-models-label {
+    font-size: 12px;
+    color: #b8b9bd;
+    margin-top: 4px;
+}
+
+.api-models {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.api-model-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.api-remove-btn {
+    background: transparent;
+    color: #b8b9bd;
+    border: 1px solid #3f4147;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.api-remove-btn:hover { background: #3f4147; color: #f87171; }
+
+.api-add-model, .api-add-pair {
+    align-self: flex-start;
+    background: transparent;
+    color: #4a6cf7;
+    border: 1px dashed #4a6cf7;
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 13px;
+}
+.api-add-model:hover, .api-add-pair:hover { background: rgba(74, 108, 247, 0.1); }
+
+.api-add-pair { align-self: stretch; }
+
+.api-actions {
+    display: flex;
+    justify-content: flex-end;
+    border-top: 1px solid #3f4147;
+    padding-top: 10px;
+}
+
+.api-save {
+    background: #4a6cf7;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.api-save:hover { background: #3a5ce0; }

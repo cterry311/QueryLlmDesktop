@@ -28,17 +28,25 @@
 
         <div id="settings-modal" class="modal hidden">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Settings</h2>
-                    <button id="settings-close" class="close-btn">&times;</button>
+                <div class="modal-header"><button id="settings-back" class="back-btn hidden" title="Back">&larr;</button>
+                    <h2 id="settings-title">Settings</h2>
+                    <button id="settings-close" class="close-btn" title="Close">&times;</button>
                 </div>
-                <ul class="settings-list">
-                    <li><button data-setting="model">Model selection</button></li>
-                    <li><button data-setting="apikey">API key</button></li>
+
+                <ul id="settings-list" class="settings-list">
+                    <li><button data-setting="api">API Details</button></li>
                     <li><button data-setting="theme">Appearance / theme</button></li>
                     <li><button data-setting="clear">Clear conversation</button></li>
                     <li><button data-setting="about">About</button></li>
                 </ul>
+
+                <div id="api-details-view" class="api-details hidden">
+                    <div id="api-pairs" class="api-pairs"></div>
+                    <button id="api-add-pair" class="api-add-pair" type="button">+ Add URL / Key pair</button>
+                    <div class="api-actions">
+                        <button id="api-save" class="api-save" type="button">Save</button>
+                    </div>
+                </div>
             </div>
         </div>
     </body>
