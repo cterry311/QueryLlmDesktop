@@ -1,4 +1,6 @@
 FrontEnd/node_modules
 BackEnd/node_modules
+modelSandbox/node_modules
 .idea
 .env
+test.js

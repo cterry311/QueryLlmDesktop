@@ -1,0 +1,28 @@
+services:
+  agent-sandbox:
+    build: ./modelSandbox
+    ports:
+      - "3002:3002"
+
+#  db:
+#    image: postgres
+#    environment:
+#      - POSTGRES_USER=${DB_USER}
+#      - POSTGRES_PASSWORD=${DB_PASSWORD}
+#      - POSTGRES_DB=${DB_NAME}
+#    volumes:
+#      - db-data:/var/lib/postgresql/data
+
+#
+#  chroma:
+#    image: chromadb/chroma
+#    ports:
+#      - "8000:8000"
+#    volumes:
+#      - chroma-data:/chroma/chroma
+#    networks:
+#      - internal
+#
+#volumes:
+#  db-data:
+#  chroma-data:
