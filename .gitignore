@@ -4,3 +4,4 @@ modelSandbox/node_modules
 .idea
 .env
 test.js
+.claude

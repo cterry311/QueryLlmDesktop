@@ -9,6 +9,7 @@
   "author": "Cason/Claude",
   "license": "ISC",
   "dependencies": {
+    "better-sqlite3": "^12.10.0",
     "express": "^5.2.1"
   }
 }
