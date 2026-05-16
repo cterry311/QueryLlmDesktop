@@ -19,16 +19,32 @@ let context = []
 
 let addedRoutes = []
 
+let nextConversationId = 1000;
+
+const sampleConversations = [
+    { id: 1, title: 'Welcome chat' },
+    { id: 2, title: 'Project ideas' },
+    { id: 3, title: 'Quick math question' }
+];
+
+function buildDummyTitle(message) {
+    const cleaned = message.trim().replace(/\s+/g, ' ');
+    return cleaned.length > 30 ? cleaned.slice(0, 30) + '…' : cleaned;
+}
+
 app.post('/chat', async (req, res) => {
     try {
         const message = req.body?.message;
         const model = req.body?.model;
         const routeId = req.body?.routeId;
         const stream = req.body?.stream ?? false;
+        const newConversation = req.body?.newConversation === true;
 
         if (typeof message !== 'string' || !message.trim()) {
             return res.status(400).json({ error: 'message is required' });
         }
+
+        if (newConversation) context = [];
 
         console.log("routeId: " + routeId)
         let route = null;
@@ -43,13 +59,21 @@ app.post('/chat', async (req, res) => {
             }
         }
 
+        let conversationMeta = null;
+        if (newConversation) {
+            conversationMeta = {
+                conversationId: nextConversationId++,
+                conversationTitle: buildDummyTitle(message)
+            };
+        }
+
         context.push({ role: 'user', content: message });
         console.log("route before chat: " + route)
 
         if (!stream) {
             const reply = await chat(context, model, route, key, false);
             context.push({ role: 'assistant', content: reply });
-            return res.json({ reply });
+            return res.json({ reply, ...(conversationMeta || {}) });
         }
 
         // SSE headers
@@ -67,6 +91,9 @@ app.post('/chat', async (req, res) => {
 
         // Push the complete reply into context once done
         context.push({ role: 'assistant', content: fullReply });
+        if (conversationMeta) {
+            res.write(`data: ${JSON.stringify({ meta: conversationMeta })}\n\n`);
+        }
         res.write('data: [DONE]\n\n');
         res.end();
 
@@ -131,6 +158,25 @@ app.post('/models', async (req, res) => {
         res.status(400).json({ error: err.message });
     }
 })
+
+app.get('/conversations', (_req, res) => {
+    res.json({ conversations: sampleConversations });
+});
+
+app.post('/conversations/messages', (req, res) => {
+    const id = req.body?.id;
+    if (typeof id !== 'number') {
+        return res.status(400).json({ error: 'id must be a number' });
+    }
+    const found = sampleConversations.find(c => c.id === id);
+    const title = found ? found.title : `Conversation ${id}`;
+    const messages = [
+        { role: 'user', content: `(dummy) opening message for "${title}"` },
+        { role: 'assistant', content: `(dummy) reply for conversation ${id}.` }
+    ];
+    context = messages.slice();
+    res.json({ id, title, messages });
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Backend listening on http://localhost:${PORT}`));

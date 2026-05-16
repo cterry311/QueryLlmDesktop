@@ -3,6 +3,70 @@ const composerEl = document.getElementById('composer')
 const inputEl = document.getElementById('input')
 const sendBtn = document.getElementById('send-btn')
 const modelSelect = document.getElementById('model-select')
+const sidebarListEl = document.getElementById('conversation-list')
+const newChatBtn = document.getElementById('new-chat-btn')
+
+let currentConversationId = null
+let conversations = []
+
+function renderConversationList() {
+    sidebarListEl.innerHTML = ''
+    for (const c of conversations) {
+        const li = document.createElement('li')
+        li.className = 'conversation-item' + (c.id === currentConversationId ? ' active' : '')
+        li.textContent = c.title
+        li.title = c.title
+        li.dataset.id = String(c.id)
+        li.addEventListener('click', () => openConversation(c.id))
+        sidebarListEl.appendChild(li)
+    }
+}
+
+async function loadConversations() {
+    try {
+        const result = await window.llm.listConversations()
+        if (!result.ok) throw new Error(result.error)
+        conversations = result.conversations || []
+        renderConversationList()
+    } catch (err) {
+        console.error('Failed to load conversations:', err)
+    }
+}
+
+function clearMessages() {
+    messagesEl.innerHTML = ''
+}
+
+async function openConversation(id) {
+    try {
+        const result = await window.llm.getConversationMessages(id)
+        if (!result.ok) throw new Error(result.error)
+        currentConversationId = id
+        clearMessages()
+        for (const m of (result.messages || [])) {
+            const who = m.role === 'user' ? 'user' : 'assistant'
+            const bubble = addBubble('', who)
+            if (who === 'assistant') {
+                bubble.innerHTML = marked.parse(m.content || '')
+            } else {
+                bubble.textContent = m.content || ''
+            }
+        }
+        renderConversationList()
+    } catch (err) {
+        console.error('Failed to open conversation:', err)
+    }
+}
+
+function startNewConversation() {
+    currentConversationId = null
+    clearMessages()
+    renderConversationList()
+    inputEl.focus()
+}
+
+newChatBtn.addEventListener('click', startNewConversation)
+loadConversations()
 
 async function loadModels() {
     try {
@@ -57,6 +121,8 @@ async function handleSend() {
 
 
 
+    const isNewConversation = currentConversationId === null
+
     // Clean up any leftover listeners from a previous message
     window.llm.removeStreamListeners();
 
@@ -68,6 +134,13 @@ async function handleSend() {
         }
         rawReply += chunk;
         pending.innerHTML = marked.parse(rawReply);
+    });
+
+    window.llm.onMeta((meta) => {
+        if (!meta || meta.conversationId === undefined) return;
+        currentConversationId = meta.conversationId;
+        conversations.unshift({ id: meta.conversationId, title: meta.conversationTitle || 'New conversation' });
+        renderConversationList();
     });
 
     window.llm.onDone(() => {
@@ -86,7 +159,7 @@ async function handleSend() {
         const lastPercent = modelSelect.value.lastIndexOf('%');
         const modelId = modelSelect.value.substring(0, lastPercent);
         const routeId = parseInt(modelSelect.value.substring(lastPercent + 1));
-        await window.llm.stream(text, modelId || 'openrouter/free', routeId || 0);
+        await window.llm.stream(text, modelId || 'openrouter/free', routeId || 0, isNewConversation);
     } catch (err) {
         pending.classList.remove('pending')
         pending.textContent = `Error: ${err.message}`
