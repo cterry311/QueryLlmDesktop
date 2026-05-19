@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 
+
 const envPath = path.join(__dirname, '..', '.env');
 if (fs.existsSync(envPath)) {
     for (const line of fs.readFileSync(envPath, 'utf-8').split(/\r?\n/)) {
@@ -11,6 +12,7 @@ if (fs.existsSync(envPath)) {
 }
 
 const { chat, getOpenrouterModels } = require('./llmClient');
+const { setup, getConversationById } = require('./dal/sqlDal.js');
 
 const app = express();
 app.use(express.json());
@@ -177,6 +179,8 @@ app.post('/conversations/messages', (req, res) => {
     context = messages.slice();
     res.json({ id, title, messages });
 });
+
+setup()
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Backend listening on http://localhost:${PORT}`));

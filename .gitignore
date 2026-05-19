@@ -1,6 +1,7 @@
 FrontEnd/node_modules
 BackEnd/node_modules
 modelSandbox/node_modules
+BackEnd/dal/sqlData
 .idea
 .env
 test.js
