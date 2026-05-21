@@ -11,29 +11,18 @@ if (fs.existsSync(envPath)) {
     }
 }
 
-const { chat, getOpenrouterModels } = require('./llmClient');
-const { setup, getConversationById } = require('./dal/sqlDal.js');
+const { chat, getOpenrouterModels, getTitle } = require('./llmClient');
+const { callModel } = require('./agentOrchestrator');
+const sqlDal = require('./dal/sqlDal.js');
 
 const app = express();
 app.use(express.json());
 
-let context = []
+let currentConversationId = 0;
 
-let addedRoutes = []
 
-let nextConversationId = 1000;
 
-const sampleConversations = [
-    { id: 1, title: 'Welcome chat' },
-    { id: 2, title: 'Project ideas' },
-    { id: 3, title: 'Quick math question' }
-];
-
-function buildDummyTitle(message) {
-    const cleaned = message.trim().replace(/\s+/g, ' ');
-    return cleaned.length > 30 ? cleaned.slice(0, 30) + '…' : cleaned;
-}
-
+/*
 app.post('/chat', async (req, res) => {
     try {
         const message = req.body?.message;
@@ -46,35 +35,42 @@ app.post('/chat', async (req, res) => {
             return res.status(400).json({ error: 'message is required' });
         }
 
-        if (newConversation) context = [];
+        if (newConversation) {
+            currentConversationId = sqlDal.addConversation("temp", null);
+        }
+        sqlDal.pushMessage({content: message, role: 'user'}, currentConversationId, null)
+        const context = sqlDal.getConversationById(currentConversationId);
 
         console.log("routeId: " + routeId)
-        let route = null;
-        let key = null;
-        if (routeId !== 0 && routeId !== undefined) {
-            for (let i = 0; i < addedRoutes.length; i++) {
-                if (addedRoutes[i].routeId === routeId) {
-                    route = addedRoutes[i].url
-                    key = addedRoutes[i].key
-                    console.log("route found: " + route)
-                }
-            }
-        }
+        const providerInfo = sqlDal.getProviderById(routeId)
+        console.log("providerInfo: " + JSON.stringify(providerInfo))
+        const route = providerInfo.url
+        const key = providerInfo.api_key
+
+
 
         let conversationMeta = null;
         if (newConversation) {
             conversationMeta = {
-                conversationId: nextConversationId++,
-                conversationTitle: buildDummyTitle(message)
+                conversationId: currentConversationId,
+                conversationTitle: "temp"
             };
+            // let conversationId = sqlDal.addConversation(buildDummyTitle(message), null)
+            // conversationMeta = sqlDal.getConversationById(conversationId)
         }
 
-        context.push({ role: 'user', content: message });
         console.log("route before chat: " + route)
 
         if (!stream) {
             const reply = await chat(context, model, route, key, false);
-            context.push({ role: 'assistant', content: reply });
+
+            sqlDal.pushMessage({content: reply, role: 'assistant'}, currentConversationId, null)
+            if (conversationMeta) {
+                const fullContext = sqlDal.getConversationById(currentConversationId)
+                const title = await getTitle(fullContext, model, route, key)
+                sqlDal.updateConversationTitle(conversationMeta.conversationId, title);
+                conversationMeta.conversationTitle = title;
+            }
             return res.json({ reply, ...(conversationMeta || {}) });
         }
 
@@ -92,8 +88,12 @@ app.post('/chat', async (req, res) => {
         }
 
         // Push the complete reply into context once done
-        context.push({ role: 'assistant', content: fullReply });
+        sqlDal.pushMessage({content: fullReply, role: 'assistant'}, currentConversationId, null)
+
         if (conversationMeta) {
+            const fullContext = sqlDal.getConversationById(currentConversationId)
+            conversationMeta.conversationTitle = await getTitle(fullContext, model, route, key)
+            sqlDal.updateConversationTitle(conversationMeta.conversationId, conversationMeta.conversationTitle);
             res.write(`data: ${JSON.stringify({ meta: conversationMeta })}\n\n`);
         }
         res.write('data: [DONE]\n\n');
@@ -110,25 +110,106 @@ app.post('/chat', async (req, res) => {
         }
     }
 });
+*/
+
+app.post('/chat', async (req, res) => {
+    try {
+        const message = req.body?.message;
+        const model = req.body?.model;
+        const routeId = req.body?.routeId;
+        const newConversation = req.body?.newConversation === true;
+
+        if (typeof message !== 'string' || !message.trim()) {
+            return res.status(400).json({ error: 'message is required' });
+        }
+
+        if (newConversation) {
+            currentConversationId = sqlDal.addConversation("temp", null);
+        }
+        sqlDal.pushMessage({ content: message, role: 'user' }, currentConversationId, null);
+        const context = sqlDal.getConversationById(currentConversationId);
+
+        const providerInfo = sqlDal.getProviderById(routeId);
+        const route = providerInfo.url;
+        const key = providerInfo.api_key;
+
+        let conversationMeta = null;
+        if (newConversation) {
+            conversationMeta = {
+                conversationId: currentConversationId,
+                conversationTitle: "temp"
+            };
+        }
+
+        // SSE headers
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        const generator = callModel(context, model, route, key);
+        let fullReply = '';
+
+        for await (const chunk of generator) {
+            const content = chunk.choices?.[0]?.delta?.content;
+            if (content) {
+                fullReply += content;
+                res.write(`data: ${JSON.stringify({ chunk: content })}\n\n`);
+            }
+        }
+
+        sqlDal.pushMessage({ content: fullReply, role: 'assistant' }, currentConversationId, null);
+
+        if (conversationMeta) {
+            const fullContext = sqlDal.getConversationById(currentConversationId);
+            conversationMeta.conversationTitle = await getTitle(fullContext, model, route, key);
+            sqlDal.updateConversationTitle(conversationMeta.conversationId, conversationMeta.conversationTitle);
+            res.write(`data: ${JSON.stringify({ meta: conversationMeta })}\n\n`);
+        }
+
+        res.write('data: [DONE]\n\n');
+        console.log("finished streaming")
+        res.end();
+
+    } catch (err) {
+        console.error(err);
+        if (!res.headersSent) {
+            res.status(500).json({ error: err.message });
+        } else {
+            res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+            res.end();
+        }
+    }
+});
 
 app.get('/models', async (_req, res) => {
     try {
+        console.log("getting models")
         const models = await getOpenrouterModels();
         for (let i = 0; i < models.length; i++) {
             models[i].routeId = 0
         }
+        const addedRoutes = sqlDal.getModels()
+        console.log("addedRoutes: " + JSON.stringify(addedRoutes, null, 2))
         for (let i = 0; i < addedRoutes.length; i++) {
-            const route = addedRoutes[i]
-            for (let j = 0; j < route.models.length; j++) {
-                const newModel = {
-                    id: route.models[j],
-                    name: route.models[j],
-                    description: "",
-                    isFree: false,
-                    routeId: route.routeId
-                }
-                models.push(newModel)
+            const newModel = {
+                id: addedRoutes[i].model_id,
+                name: addedRoutes[i].model_id,
+                description: "",
+                isFree: false,
+                routeId: addedRoutes[i].provider_id
             }
+            models.push(newModel)
+            // const route = addedRoutes[i]
+            // for (let j = 0; j < route.models.length; j++) {
+            //     const newModel = {
+            //         id: route.models[j],
+            //         name: route.models[j],
+            //         description: "",
+            //         isFree: false,
+            //         routeId: route.routeId
+            //     }
+            //     models.push(newModel)
+            // }
         }
         res.json({ models });
     } catch (err) {
@@ -149,10 +230,12 @@ app.post('/models', async (req, res) => {
             }
         }
         for (let i = 0; i < models.length; i++) {
-            models[i].routeId = i + 1
+            const providerId = sqlDal.addProvider(models[i].url, models[i].key)
+            for (const m of models[i].models) {
+                sqlDal.addModel(m, providerId)
+            }
         }
-        addedRoutes = models
-        console.log(JSON.stringify(addedRoutes, null, 2))
+        console.log(JSON.stringify(models, null, 2))
         res.json({ ok: true })
     } catch (err) {
         console.log(err)
@@ -162,7 +245,8 @@ app.post('/models', async (req, res) => {
 })
 
 app.get('/conversations', (_req, res) => {
-    res.json({ conversations: sampleConversations });
+    const conversations = sqlDal.getConversations();
+    res.json({ conversations: conversations });
 });
 
 app.post('/conversations/messages', (req, res) => {
@@ -170,17 +254,21 @@ app.post('/conversations/messages', (req, res) => {
     if (typeof id !== 'number') {
         return res.status(400).json({ error: 'id must be a number' });
     }
-    const found = sampleConversations.find(c => c.id === id);
+    const conversations = sqlDal.getConversations();
+    const found = conversations.find(c => c.id === id);
     const title = found ? found.title : `Conversation ${id}`;
-    const messages = [
-        { role: 'user', content: `(dummy) opening message for "${title}"` },
-        { role: 'assistant', content: `(dummy) reply for conversation ${id}.` }
-    ];
-    context = messages.slice();
+    const messages = sqlDal.getConversationById(id);
+    currentConversationId = id;
     res.json({ id, title, messages });
 });
 
-setup()
+
+
+sqlDal.setup()
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Backend listening on http://localhost:${PORT}`));
+
+// TODO: make the frontend send the modelId instead of model and routeId in chat requests
+// TODO: make the frontend send the conversationID in the chat request

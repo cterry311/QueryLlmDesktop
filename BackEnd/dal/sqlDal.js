@@ -61,6 +61,7 @@ function setup() {
 }
 
 function refreshOpenRouterModels(models) {
+    console.log(JSON.stringify(models, null, 2))
     const openRouterId = db.prepare(`
         SELECT id
         FROM providers
@@ -80,11 +81,50 @@ function refreshOpenRouterModels(models) {
 }
 
 function addProvider(url, apiKey) {
+    const providerExists = db.prepare(`
+    SELECT id
+    FROM providers
+    WHERE url = ? AND api_key = ?
+    `).get(url, apiKey);
+    if (providerExists) return providerExists.id;
     const providerId = db.prepare(`
         INSERT INTO providers (url, api_key, created_at, updated_at)
         VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `).run(url, apiKey).lastInsertRowid;
     return providerId;
+}
+
+function addModel(modelId, providerId) {
+    const modelExists = db.prepare(`
+    SELECT id
+    FROM models
+    WHERE model_id = ? AND provider_id = ?
+    `).get(modelId, providerId);
+    if (modelExists) return modelExists.id;
+    const id = db.prepare(`
+        INSERT INTO models (model_id, provider_id)
+        VALUES (?, ?)
+    `).run(modelId, providerId).lastInsertRowid;
+    db.prepare(`
+    UPDATE providers
+    SET updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?`).run(providerId);
+    return id;
+}
+
+function getModels(includeOpenRouter = false) {
+    if (includeOpenRouter) {
+        return db.prepare(`
+        SELECT id, model_id, provider_id FROM models
+        `).all();
+    } else {
+        return db.prepare(`
+        SELECT id, model_id, provider_id 
+        FROM models
+        WHERE provider_id NOT IN (SELECT id FROM providers WHERE url = 'https://openrouter.ai/api/v1/chat/completions')
+        `).all()
+    }
+
 }
 
 function getConversationById(id) {
@@ -126,6 +166,38 @@ function pushMessage(message, conversationId, modelId) {
     return messageId;
 }
 
+function getConversations() {
+    return db.prepare(`
+    SELECT id, title FROM conversations
+    ORDER BY updated_at DESC
+    `).all();
+}
+
+function getProviderById(id) {
+    if (id === 0) {
+        return db.prepare(`
+        SELECT url, api_key FROM providers
+        WHERE url = 'https://openrouter.ai/api/v1/chat/completions'
+        `).get()
+    }
+    return db.prepare(`
+    SELECT url, api_key FROM providers
+    WHERE id = ?
+    `).get(id);
+}
+
+function updateConversationTitle(id, title) {
+    console.log("updating conversation title")
+    console.log(id)
+    console.log(title)
+    db.prepare(`
+        UPDATE conversations
+        SET updated_at = CURRENT_TIMESTAMP,
+            title = ?
+        WHERE id = ?
+    `).run(title, id);
+}
+
 
 
 
@@ -133,3 +205,10 @@ exports.getConversationById = getConversationById;
 exports.setup = setup;
 exports.addConversation = addConversation;
 exports.pushMessage = pushMessage;
+exports.addModel = addModel;
+exports.getModels = getModels;
+exports.addProvider = addProvider;
+exports.refreshOpenRouterModels = refreshOpenRouterModels;
+exports.getConversations = getConversations;
+exports.getProviderById = getProviderById;
+exports.updateConversationTitle = updateConversationTitle;

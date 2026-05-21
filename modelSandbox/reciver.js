@@ -10,7 +10,8 @@ app.use(express.json())
 
 app.post('/execute', async (req, res) => {
     const { code, language } = req.body
-
+    console.log("code: " + code)
+    console.log("language: " + language)
     // give each execution a unique temp file
     const id = crypto.randomUUID()
     const ext = language === 'python' ? 'py' : 'js'
@@ -27,7 +28,7 @@ app.post('/execute', async (req, res) => {
         exec(command, { timeout: 30000 }, (error, stdout, stderr) => {
             // clean up temp file
             fs.unlinkSync(filePath)
-
+            console.log("stdout: " + stdout)
             res.json({
                 stdout: stdout || '',
                 stderr: stderr || '',

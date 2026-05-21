@@ -31,6 +31,7 @@ async function getResponse(context, model, route, key, stream = false) {
 
     if (!stream) {
         const data = await response.json();
+        console.log("data: " + JSON.stringify(data, null, 2))
         return data.choices[0].message.content;
     }
 
@@ -52,6 +53,44 @@ async function getResponse(context, model, route, key, stream = false) {
             }
         }
     })();
+}
+
+async function* agentStream(context, model, url, key, tools, additionalParameters = {}) {
+    const hasTools = tools && tools.length > 0;
+
+    const response = await fetch(url, {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${key}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            model,
+            messages: context,
+            stream: true,
+            ...(hasTools && { tools, tool_choice: "auto" }),
+            ...additionalParameters
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error(`LLM error ${response.status}: ${await response.text()}`);
+    }
+
+    const decoder = new TextDecoder();
+    for await (const chunk of response.body) {
+        const lines = decoder.decode(chunk).split('\n');
+        for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const data = line.slice(6);
+            if (data === '[DONE]') return;
+            try {
+                yield JSON.parse(data);
+            } catch {
+                continue;
+            }
+        }
+    }
 }
 
 async function getOpenrouterModels() {
@@ -86,4 +125,15 @@ async function getOpenrouterModels() {
     }
 }
 
-module.exports = { chat: getResponse, getOpenrouterModels };
+async function getTitle(context, model, route, key) {
+    const systemPrompt = "Create a title for the conversation so far, it should just be a few words long, respond in plain text."
+    context.push({ role: "user", content: systemPrompt });
+    const response = await getResponse(context, model, route, key, false);
+    console.log("response: " + response)
+    return response.trim();
+}
+
+
+
+
+module.exports = { chat: getResponse, getOpenrouterModels, getTitle, agentStream };
