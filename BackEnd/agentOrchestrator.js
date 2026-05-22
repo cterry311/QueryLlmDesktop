@@ -1,8 +1,8 @@
 const { chat, agentStream } = require('./llmClient');
 const { tools, functionsById } = require('./toolHandlers');
+const sqlDal = require('./dal/sqlDal');
 
-
-async function* callModel(context, model, url, key, maxIterations = 10) {
+async function* callModel(context, model, url, key, conversationId, modelId, maxIterations = 15) {
     console.log("context: " + JSON.stringify(context, null, 2))
     const messages = [...context];
     console.log("messages: " + JSON.stringify(messages, null, 2))
@@ -55,6 +55,11 @@ async function* callModel(context, model, url, key, maxIterations = 10) {
                 content: assistantContent || null,
                 tool_calls: toolCalls
             });
+            sqlDal.pushMessage({
+                role: 'assistant',
+                content: assistantContent || null,
+                tool_calls: toolCalls
+            }, conversationId, modelId)
             assistantContent = '';
 
             for (const tc of toolCalls) {
@@ -69,6 +74,10 @@ async function* callModel(context, model, url, key, maxIterations = 10) {
 
         } else {
             messages.push({ role: 'assistant', content: assistantContent });
+            sqlDal.pushMessage({
+                role: 'assistant',
+                content: assistantContent || null,
+            }, conversationId, modelId)
             console.log("finished")
             console.log("messages: " + JSON.stringify(messages, null, 2))
             return;

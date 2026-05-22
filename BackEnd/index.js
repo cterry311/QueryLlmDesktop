@@ -146,7 +146,7 @@ app.post('/chat', async (req, res) => {
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
 
-        const generator = callModel(context, model, route, key);
+        const generator = callModel(context, model, route, key, currentConversationId, null);
         let fullReply = '';
 
         for await (const chunk of generator) {
@@ -157,7 +157,7 @@ app.post('/chat', async (req, res) => {
             }
         }
 
-        sqlDal.pushMessage({ content: fullReply, role: 'assistant' }, currentConversationId, null);
+
 
         if (conversationMeta) {
             const fullContext = sqlDal.getConversationById(currentConversationId);
@@ -257,7 +257,7 @@ app.post('/conversations/messages', (req, res) => {
     const conversations = sqlDal.getConversations();
     const found = conversations.find(c => c.id === id);
     const title = found ? found.title : `Conversation ${id}`;
-    const messages = sqlDal.getConversationById(id);
+    const messages = sqlDal.getConversationForDisplay(id);
     currentConversationId = id;
     res.json({ id, title, messages });
 });

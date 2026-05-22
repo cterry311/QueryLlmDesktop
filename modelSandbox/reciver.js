@@ -10,6 +10,12 @@ app.use(express.json())
 
 app.post('/execute', async (req, res) => {
     const { code, language } = req.body
+    if (!code || !language) {
+        return res.status(400).json({ error: 'Code and language are required' })
+    }
+    if (typeof code !== 'string' || typeof language !== 'string') {
+        return res.status(400).json({ error: 'Code and language must be strings' })
+    }
     console.log("code: " + code)
     console.log("language: " + language)
     // give each execution a unique temp file
