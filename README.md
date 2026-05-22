@@ -54,8 +54,8 @@ Query is split into isolated services, each with a clear responsibility:
 | **Frontend** | Electron desktop app. Communicates with the backend over a local WebSocket/HTTP connection. Runs natively on the host machine. |
 | **Backend** | Node.js service handling LLM API calls, agent orchestration, tool routing, and database access. |
 | **Agent Sandbox** | Isolated Docker container with no network access. Used exclusively for executing agent-generated code and terminal commands safely. |
-| **SQL Database** | SQLite or PostgreSQL. Stores full conversation history locally. |
-| **Vector Database** | Chroma or pgvector (PostgreSQL extension). Stores embedded conversation memory for semantic recall. |
+| **SQL Database** | SQLite. Stores full conversation history locally. |
+| **Vector Database** | Chroma. Stores embedded conversation memory for semantic recall. |
 
 > The frontend runs natively and is not containerized, as Electron requires direct access to the host OS display. All other services run inside Docker containers managed by Docker Compose.
 
@@ -79,6 +79,7 @@ Query works with any API that follows the OpenAI chat completions format, includ
 
 - [OpenRouter](https://openrouter.ai) — Access to a wide range of hosted models
 - [Ollama](https://ollama.com) — Run models locally on your machine
+- Docker Model Runner — Run models in a Docker container
 - Any other OpenAI-compatible endpoint
 
 API endpoints and keys are configurable per provider in the application settings.
@@ -91,10 +92,11 @@ API endpoints and keys are configurable per provider in the application settings
 |---|---|
 | Desktop UI | Electron, HTML, CSS, JavaScript |
 | Backend | Node.js |
-| Database | SQLite / PostgreSQL |
+| Database | SQLite  |
 | Vector Memory | Chroma / pgvector |
 | Containerization | Docker, Docker Compose |
 | LLM APIs | OpenRouter, OpenAI-compatible endpoints |
+ | Search API | LangSearch |
 
 ---
 
@@ -104,16 +106,13 @@ API endpoints and keys are configurable per provider in the application settings
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/query.git
+git clone https://github.com/cterry311/QueryLlmDesktop.git
 cd query
 
-# Start backend services
-docker compose up -d
+# Start all services
+node start.js
 
-# Install and run the frontend
-cd frontend
-npm install
-npm start
+
 ```
 
 ---
@@ -124,6 +123,7 @@ Add your API keys and configuration to a `.env` file in the root directory:
 
 ```env
 OPENROUTER_API_KEY=your_key_here
+LANG_SEARCH=your_key_here
 ```
 
 Additional providers, model parameters, and settings can be configured directly within the application UI.
