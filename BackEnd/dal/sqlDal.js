@@ -510,8 +510,14 @@ function updateConversationTitle(id, title) {
     `).run(title, id);
 }
 
+function getConversationDirectory(id) {
+    const row = db.prepare(`SELECT directory FROM conversations WHERE id = ?`).get(id);
+    return row?.directory ?? null;
+}
+
 
 exports.setup = setup;
+exports.getConversationDirectory = getConversationDirectory;
 exports.addConversation = addConversation;
 exports.pushMessage = pushMessage;
 exports.addModel = addModel;
