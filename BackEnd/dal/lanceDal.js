@@ -53,6 +53,78 @@ async function pushMemory(text, additionalContext) {
         context: additionalContext
     }
     await table.add([record])
+    return { success: true}
 }
 
-pushMemory("hello world", [])
+async function getMemory(query, numResults) {
+    const table = await memTable
+    const embedding = await getEmbedding(query)
+    const fullMemories = await table.search(embedding).limit(numResults).toArray()
+    const onlyContent = []
+    for (const memory of fullMemories) {
+        const limitedMemory = {
+            memoryId: memory.id,
+            text: memory.text,
+            context: memory.context
+        }
+        onlyContent.push(limitedMemory)
+    }
+    return onlyContent
+}
+
+async function addContext(id, newContext) {
+    // Query for the existing record
+    const results = await memTable
+        .query()
+        .where(`id = '${id}'`)
+        .toArray();
+
+    if (results.length === 0) {
+        return { error: "Record not found"}
+    }
+
+    const record = results[0];
+
+    // Merge the new context into the existing one
+    const updatedContext = [...record.context, ...newContext];
+
+    // Update the record
+    await memTable.update({
+        where: `id = '${id}'`,
+        values: { context: updatedContext, editedAt: Date.now() },
+    });
+    return { success: true };
+}
+
+async function clearContext(id) {
+    // Query for the existing record
+    const results = await memTable
+        .query()
+        .where(`id = '${id}'`)
+        .toArray();
+
+    if (results.length === 0) {
+        return { error: "Record not found"}
+    }
+
+    const record = results[0];
+
+    // Update the record
+    await memTable.update({
+        where: `id = '${id}'`,
+        values: { context: [], editedAt: Date.now() },
+    });
+    return { success: true };
+}
+
+async function removeMemory(id) {
+    const table = await memTable
+    await table.delete(`id = '${id}'`);
+    return { success: true }
+}
+
+exports.pushMemory = pushMemory;
+exports.getMemory = getMemory;
+exports.addContext = addContext;
+exports.clearContext = clearContext;
+exports.removeMemory = removeMemory;

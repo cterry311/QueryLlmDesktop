@@ -57,6 +57,8 @@ async function getResponse(context, model, route, key, stream = false) {
 
 async function* agentStream(context, model, url, key, tools, additionalParameters = {}) {
     const hasTools = tools && tools.length > 0;
+    console.log("being passed to model")
+    console.log(JSON.stringify(context[context.length - 1], null, 2))
 
     const response = await fetch(url, {
         method: "POST",

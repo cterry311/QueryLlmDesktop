@@ -5,4 +5,6 @@ BackEnd/dal/sqlData
 .idea
 .env
 test.js
+BackEnd/lance_data
+BackEnd/dal/lance_data
 .claude

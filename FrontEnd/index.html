@@ -24,6 +24,12 @@
                 <button id="settings-btn" class="settings-btn" title="Settings">&#9881;</button>
             </header>
 
+            <div id="directory-bar" class="directory-bar">
+                <button id="dir-attach-btn" type="button" class="dir-btn">Attach directory</button>
+                <span id="dir-label" class="dir-label hidden"></span>
+                <button id="dir-clear-btn" type="button" class="dir-btn hidden">Remove</button>
+            </div>
+
             <main id="messages" class="messages"></main>
 
             <form id="composer" class="composer">
@@ -34,6 +40,22 @@
                     rows="2"></textarea>
                 <button id="send-btn" type="submit" class="send-btn">Send</button>
             </form>
+        </div>
+
+        <div id="permission-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="permission-title">Agent is requesting permission</h2>
+                </div>
+                <div class="permission-body">
+                    <p id="permission-tool" class="permission-tool"></p>
+                    <pre id="permission-details" class="permission-details"></pre>
+                </div>
+                <div class="permission-actions">
+                    <button id="permission-deny" type="button" class="permission-deny">Deny</button>
+                    <button id="permission-allow" type="button" class="permission-allow">Allow</button>
+                </div>
+            </div>
         </div>
 
         <div id="settings-modal" class="modal hidden">

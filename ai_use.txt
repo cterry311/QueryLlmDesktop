@@ -1,0 +1,5 @@
+AI was used significantly in the development of this project, I was used for the following:
+creating of base UI
+creating the interface for adding sourses and models
+creating support for streaming responses
+creation of basic agentic loop

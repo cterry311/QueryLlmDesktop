@@ -12,7 +12,7 @@ if (fs.existsSync(envPath)) {
 }
 
 const { chat, getOpenrouterModels, getTitle } = require('./llmClient');
-const { callModel } = require('./agentOrchestrator');
+const { callModel, resolvePermission, clearContext } = require('./agentOrchestrator');
 const sqlDal = require('./dal/sqlDal.js');
 
 const app = express();
@@ -118,13 +118,17 @@ app.post('/chat', async (req, res) => {
         const model = req.body?.model;
         const routeId = req.body?.routeId;
         const newConversation = req.body?.newConversation === true;
+        const requestedDirectory = typeof req.body?.directory === 'string' && req.body.directory.trim()
+            ? req.body.directory
+            : null;
 
         if (typeof message !== 'string' || !message.trim()) {
             return res.status(400).json({ error: 'message is required' });
         }
 
         if (newConversation) {
-            currentConversationId = sqlDal.addConversation("temp", null);
+            clearContext()
+            currentConversationId = sqlDal.addConversation("temp", requestedDirectory);
         }
         sqlDal.pushMessage({ content: message, role: 'user' }, currentConversationId, null);
         const context = sqlDal.getConversationById(currentConversationId);
@@ -133,11 +137,14 @@ app.post('/chat', async (req, res) => {
         const route = providerInfo.url;
         const key = providerInfo.api_key;
 
+        const conversationDirectory = sqlDal.getConversationDirectory(currentConversationId);
+
         let conversationMeta = null;
         if (newConversation) {
             conversationMeta = {
                 conversationId: currentConversationId,
-                conversationTitle: "temp"
+                conversationTitle: "temp",
+                directory: conversationDirectory
             };
         }
 
@@ -146,10 +153,14 @@ app.post('/chat', async (req, res) => {
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
 
-        const generator = callModel(context, model, route, key, currentConversationId, null);
+        const generator = callModel(context, model, route, key, currentConversationId, null, conversationDirectory);
         let fullReply = '';
 
         for await (const chunk of generator) {
+            if (chunk && chunk._type === 'permission_request') {
+                res.write(`data: ${JSON.stringify({ permission: { id: chunk.id, tool: chunk.tool, args: chunk.args } })}\n\n`);
+                continue;
+            }
             const content = chunk.choices?.[0]?.delta?.content;
             if (content) {
                 fullReply += content;
@@ -258,8 +269,20 @@ app.post('/conversations/messages', (req, res) => {
     const found = conversations.find(c => c.id === id);
     const title = found ? found.title : `Conversation ${id}`;
     const messages = sqlDal.getConversationForDisplay(id);
+    const directory = sqlDal.getConversationDirectory(id);
+    clearContext()
     currentConversationId = id;
-    res.json({ id, title, messages });
+    res.json({ id, title, messages, directory });
+});
+
+app.post('/permission', (req, res) => {
+    const id = req.body?.id;
+    const decision = req.body?.decision;
+    if (typeof id !== 'string' || (decision !== 'allow' && decision !== 'deny')) {
+        return res.status(400).json({ error: "id (string) and decision ('allow'|'deny') are required" });
+    }
+    const ok = resolvePermission(id, decision);
+    res.json({ ok });
 });
 
 

@@ -5,9 +5,65 @@ const sendBtn = document.getElementById('send-btn')
 const modelSelect = document.getElementById('model-select')
 const sidebarListEl = document.getElementById('conversation-list')
 const newChatBtn = document.getElementById('new-chat-btn')
+const dirAttachBtn = document.getElementById('dir-attach-btn')
+const dirLabelEl = document.getElementById('dir-label')
+const dirClearBtn = document.getElementById('dir-clear-btn')
+const permissionModal = document.getElementById('permission-modal')
+const permissionToolEl = document.getElementById('permission-tool')
+const permissionDetailsEl = document.getElementById('permission-details')
+const permissionAllowBtn = document.getElementById('permission-allow')
+const permissionDenyBtn = document.getElementById('permission-deny')
 
 let currentConversationId = null
 let conversations = []
+let pendingDirectory = null          // chosen before first message of a new chat
+let activeConversationDirectory = null // directory of the currently-open conversation (read-only)
+let activePermissionId = null
+
+function updateDirectoryBar() {
+    const isNewChat = currentConversationId === null
+    const displayDir = isNewChat ? pendingDirectory : activeConversationDirectory
+
+    if (displayDir) {
+        dirLabelEl.textContent = `Directory: ${displayDir}`
+        dirLabelEl.title = displayDir
+        dirLabelEl.classList.remove('hidden')
+    } else {
+        dirLabelEl.classList.add('hidden')
+        dirLabelEl.textContent = ''
+        dirLabelEl.title = ''
+    }
+
+    if (isNewChat) {
+        dirAttachBtn.classList.remove('hidden')
+        dirAttachBtn.textContent = pendingDirectory ? 'Change directory' : 'Attach directory'
+        if (pendingDirectory) {
+            dirClearBtn.classList.remove('hidden')
+        } else {
+            dirClearBtn.classList.add('hidden')
+        }
+    } else {
+        dirAttachBtn.classList.add('hidden')
+        dirClearBtn.classList.add('hidden')
+    }
+}
+
+dirAttachBtn.addEventListener('click', async () => {
+    try {
+        const result = await window.llm.pickDirectory()
+        if (result.ok && result.directory) {
+            pendingDirectory = result.directory
+            updateDirectoryBar()
+        }
+    } catch (err) {
+        console.error('Failed to pick directory:', err)
+    }
+})
+
+dirClearBtn.addEventListener('click', () => {
+    pendingDirectory = null
+    updateDirectoryBar()
+})
 
 function renderConversationList() {
     sidebarListEl.innerHTML = ''
@@ -42,6 +98,8 @@ async function openConversation(id) {
         const result = await window.llm.getConversationMessages(id)
         if (!result.ok) throw new Error(result.error)
         currentConversationId = id
+        activeConversationDirectory = result.directory || null
+        pendingDirectory = null
         clearMessages()
         for (const m of (result.messages || [])) {
             const who = m.role === 'user' ? 'user' : 'assistant'
@@ -53,6 +111,7 @@ async function openConversation(id) {
             }
         }
         renderConversationList()
+        updateDirectoryBar()
     } catch (err) {
         console.error('Failed to open conversation:', err)
     }
@@ -60,13 +119,17 @@ async function openConversation(id) {
 
 function startNewConversation() {
     currentConversationId = null
+    activeConversationDirectory = null
+    pendingDirectory = null
     clearMessages()
     renderConversationList()
+    updateDirectoryBar()
     inputEl.focus()
 }
 
 newChatBtn.addEventListener('click', startNewConversation)
 loadConversations()
+updateDirectoryBar()
 
 async function loadModels() {
     try {
@@ -122,6 +185,7 @@ async function handleSend() {
 
 
     const isNewConversation = currentConversationId === null
+    const directoryForRequest = isNewConversation ? pendingDirectory : null
 
     // Clean up any leftover listeners from a previous message
     window.llm.removeStreamListeners();
@@ -139,8 +203,17 @@ async function handleSend() {
     window.llm.onMeta((meta) => {
         if (!meta || meta.conversationId === undefined) return;
         currentConversationId = meta.conversationId;
+        if (Object.prototype.hasOwnProperty.call(meta, 'directory')) {
+            activeConversationDirectory = meta.directory || null;
+            pendingDirectory = null;
+            updateDirectoryBar();
+        }
         conversations.unshift({ id: meta.conversationId, title: meta.conversationTitle || 'New conversation' });
         renderConversationList();
+    });
+
+    window.llm.onPermissionRequest((perm) => {
+        showPermissionModal(perm);
     });
 
     window.llm.onDone(() => {
@@ -159,7 +232,7 @@ async function handleSend() {
         const lastPercent = modelSelect.value.lastIndexOf('%');
         const modelId = modelSelect.value.substring(0, lastPercent);
         const routeId = parseInt(modelSelect.value.substring(lastPercent + 1));
-        await window.llm.stream(text, modelId || 'openrouter/free', routeId || 0, isNewConversation);
+        await window.llm.stream(text, modelId || 'openrouter/free', routeId || 0, isNewConversation, directoryForRequest);
     } catch (err) {
         pending.classList.remove('pending')
         pending.textContent = `Error: ${err.message}`
@@ -167,6 +240,60 @@ async function handleSend() {
         inputEl.focus();
     }
 }
+
+function formatPermissionDetails(perm) {
+    if (!perm) return ''
+    if (perm.tool === 'edit_file') {
+        const filePath = perm.args?.path ?? '(unknown path)'
+        const content = perm.args?.content ?? ''
+        return `File: ${filePath}\n\n--- proposed content ---\n${content}`
+    }
+    if (perm.tool === 'execute_command') {
+        const command = perm.args?.command ?? '(no command)'
+        return `Command:\n${command}`
+    }
+    try {
+        return JSON.stringify(perm.args, null, 2)
+    } catch {
+        return String(perm.args)
+    }
+}
+
+function showPermissionModal(perm) {
+    activePermissionId = perm.id
+    const toolLabel = perm.tool === 'edit_file'
+        ? 'The agent wants to create or modify a file:'
+        : (perm.tool === 'execute_command'
+            ? 'The agent wants to run a terminal command:'
+            : `The agent wants to use the "${perm.tool}" tool:`)
+    permissionToolEl.textContent = toolLabel
+    permissionDetailsEl.textContent = formatPermissionDetails(perm)
+    permissionModal.classList.remove('hidden')
+}
+
+function hidePermissionModal() {
+    permissionModal.classList.add('hidden')
+    permissionToolEl.textContent = ''
+    permissionDetailsEl.textContent = ''
+    activePermissionId = null
+}
+
+async function respondPermission(decision) {
+    if (!activePermissionId) {
+        hidePermissionModal()
+        return
+    }
+    const id = activePermissionId
+    hidePermissionModal()
+    try {
+        await window.llm.respondPermission(id, decision)
+    } catch (err) {
+        console.error('Failed to send permission decision:', err)
+    }
+}
+
+permissionAllowBtn.addEventListener('click', () => respondPermission('allow'))
+permissionDenyBtn.addEventListener('click', () => respondPermission('deny'))
 
 composerEl.addEventListener('submit', (e) => {
     e.preventDefault()

@@ -1,11 +1,30 @@
-const { chat, agentStream } = require('./llmClient');
-const { tools, functionsById } = require('./toolHandlers');
+const crypto = require('crypto');
+const { agentStream } = require('./llmClient');
+const { tools, functionsById, TOOLS_REQUIRING_PERMISSION, clearContext } = require('./toolHandlers');
 const sqlDal = require('./dal/sqlDal');
 
-async function* callModel(context, model, url, key, conversationId, modelId, maxIterations = 15) {
+const permissionResolvers = new Map();
+
+function resolvePermission(id, decision) {
+    const resolver = permissionResolvers.get(id);
+    if (resolver) {
+        permissionResolvers.delete(id);
+        resolver(decision);
+        return true;
+    }
+    return false;
+}
+
+async function* callModel(context, model, url, key, conversationId, modelId, directory = null, maxIterations = 15) {
+
     console.log("context: " + JSON.stringify(context, null, 2))
-    const messages = [...context];
+    const messages = [
+        {'role': 'system', 'content':'you are in an agentic environment, use the tools provided to help the user fulfill their request, use the memory tools frequently to persistently store useful information or check for context on matters'},
+        ...context
+    ];
     console.log("messages: " + JSON.stringify(messages, null, 2))
+
+    const toolCtx = { directory, conversationId };
 
     for (let i = 0; i < maxIterations; i++) {
         const finalIteration = i === maxIterations - 1;
@@ -63,8 +82,39 @@ async function* callModel(context, model, url, key, conversationId, modelId, max
             assistantContent = '';
 
             for (const tc of toolCalls) {
-                const args = JSON.parse(tc.function.arguments);
-                const result = await functionsById[tc.function.name](args);
+                let args;
+                try {
+                    args = JSON.parse(tc.function.arguments || '{}');
+                } catch (e) {
+                    args = {};
+                }
+
+                let result;
+                if (TOOLS_REQUIRING_PERMISSION.has(tc.function.name)) {
+                    const permissionId = crypto.randomUUID();
+                    const decisionPromise = new Promise((resolve) => {
+                        permissionResolvers.set(permissionId, resolve);
+                    });
+                    yield {
+                        _type: 'permission_request',
+                        id: permissionId,
+                        tool: tc.function.name,
+                        args
+                    };
+                    const decision = await decisionPromise;
+                    if (decision !== 'allow') {
+                        result = { error: 'User denied this tool call.' };
+                    } else if (typeof functionsById[tc.function.name] !== 'function') {
+                        result = { error: `Unknown tool: ${tc.function.name}` };
+                    } else {
+                        result = await functionsById[tc.function.name](args, toolCtx);
+                    }
+                } else if (typeof functionsById[tc.function.name] !== 'function') {
+                    result = { error: `Unknown tool: ${tc.function.name}` };
+                } else {
+                    result = await functionsById[tc.function.name](args, toolCtx);
+                }
+
                 messages.push({
                     role: 'tool',
                     tool_call_id: tc.id,
@@ -85,4 +135,4 @@ async function* callModel(context, model, url, key, conversationId, modelId, max
     }
 }
 
-module.exports = { callModel };
+module.exports = { callModel, resolvePermission, clearContext };
