@@ -139,6 +139,11 @@ async function getOpenrouterModels() {
 }
 
 async function getTitle(context, model, route, key) {
+    if (containsImageContent(context)) {
+        if (!(await isImageCapable(model, route, key))) {
+            context = purgeImageContent(context)
+        }
+    }
     const systemPrompt = "Create a title for the conversation so far, it should just be a few words long, respond in plain text."
     context.push({ role: "user", content: systemPrompt });
     const response = await getResponse(context, model, route, key, false);
