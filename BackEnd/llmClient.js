@@ -1,8 +1,14 @@
 const openrouterURL = "https://openrouter.ai/api/v1/chat/completions"
 
 const defaultModel = "openrouter/free"
+const imageCapability = new Map()
 
 async function getResponse(context, model, route, key, stream = false) {
+    if (containsImageContent(context)) {
+        if (!(await isImageCapable(model, route, key))) {
+            context = purgeImageContent(context)
+        }
+    }
     console.log("route: " + route)
     if (route === null) {
         route = openrouterURL
@@ -56,6 +62,11 @@ async function getResponse(context, model, route, key, stream = false) {
 }
 
 async function* agentStream(context, model, url, key, tools, additionalParameters = {}) {
+    if (containsImageContent(context)) {
+        if (!(await isImageCapable(model, url, key))) {
+            context = purgeImageContent(context)
+        }
+    }
     const hasTools = tools && tools.length > 0;
     console.log("being passed to model")
     console.log(JSON.stringify(context[context.length - 1], null, 2))
@@ -135,6 +146,85 @@ async function getTitle(context, model, route, key) {
     return response.trim();
 }
 
+async function isImageCapable(model, route, key) {
+    if (imageCapability.has(model + " " + route)) {
+        return imageCapability.get(model + " " + route);
+    }
+    const context = [
+        {
+            role: "user",
+            content: [
+                {
+                    type: "image_url",
+                    image_url: {
+                        url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+                    }
+                },
+                {
+                    type: "text",
+                    text: "1"
+                }
+            ]
+        }
+    ]
+    const header = {
+        "Authorization": `Bearer ${key}`,
+        "Content-Type": "application/json"
+    }
+    const body = {
+        messages: context,
+        model: model,
+        max_tokens: 1,
+    }
+    const response = await fetch(route, {
+        method: "POST",
+        headers: header,
+        body: JSON.stringify(body)
+    })
+    if (response.ok) {
+        imageCapability.set(model + " " + route, true);
+        return true;
+    }
+    imageCapability.set(model + " " + route, false);
+    return false;
+}
+
+function containsImageContent(context) {
+    for (const message of context) {
+        if (Array.isArray(message.content)) {
+            for (const block of message.content) {
+                if (block.type === "image_url") {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+function purgeImageContent(context) {
+    const newMessages = []
+    for (const message of context) {
+        if (Array.isArray(message.content)) {
+            let textContent = ""
+            for (const block of message.content) {
+                if (block.type === "text") {
+                    textContent += block.text
+                }
+            }
+            if (textContent.trim() === "") {
+                continue
+            }
+            newMessages.push({
+                role: message.role,
+                content: textContent
+            })
+        } else {
+            newMessages.push(message)
+        }
+    }
+    return newMessages
+}
 
 
 
