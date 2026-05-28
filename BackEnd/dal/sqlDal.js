@@ -278,6 +278,14 @@ function setup() {
         content TEXT NOT NULL,
         FOREIGN KEY (message_id) REFERENCES messages(id)
       );
+
+    CREATE TABLE IF NOT EXISTS images (
+        if INTEGER PRIMARY KEY AUTOINCREMENT,
+        image_data STRING NOT NULL,
+        message_id INTEGER NOT NULL,
+        FOREIGN KEY (message_id) REFERENCES messages(id)
+    )
+    
     `);
 
     const openRouterExists = db.prepare(`
@@ -363,6 +371,25 @@ function getModels(includeOpenRouter = false) {
     }
 }
 
+/*
+messages: [
+  {
+    role: "user",
+    content: [
+      {
+        type: "image_url",
+        image_url: { url: "https://example.com/image.jpg" }
+      },
+      {
+        type: "text",
+        text: "What is in this image?"
+      }
+    ]
+  }
+]
+*/
+
+
 // For sending to the model - includes tool calls and tool results reconstructed correctly
 function getConversationById(id) {
     const messages = db.prepare(`
@@ -373,6 +400,21 @@ function getConversationById(id) {
     `).all(id);
 
     return messages.map(message => {
+        let messageContent = message.content;
+        if (message.role === 'user' || message.role === 'assistant') {
+            const images = db.prepare(`
+                SELECT if as id, image_data
+                FROM images
+                WHERE message_id = ?
+            `).all(message.id);
+            if (images.length > 0) {
+                messageContent = []
+                for (const image of images) {
+                    messageContent.push({ type: 'image_url', image_url: { url: image.image_data } })
+                }
+                messageContent.push({ type: 'text', text: message.content })
+            }
+        }
         if (message.role === 'assistant') {
             const toolCalls = db.prepare(`
                 SELECT tool_call_id as id, name, arguments
@@ -380,7 +422,7 @@ function getConversationById(id) {
                 WHERE message_id = ?
             `).all(message.id);
 
-            const result = { role: 'assistant', content: message.content };
+            const result = { role: 'assistant', content: messageContent };
             if (toolCalls.length > 0) {
                 result.tool_calls = toolCalls.map(tc => ({
                     id: tc.id,
@@ -405,14 +447,15 @@ function getConversationById(id) {
             };
         }
 
-        return { role: message.role, content: message.content };
+        return { role: message.role, content: messageContent };
     });
 }
 
 // For displaying to the user - no tool messages, sequential assistant messages concatenated
+/*
 function getConversationForDisplay(id) {
     const messages = db.prepare(`
-        SELECT speaker_role as "role", content
+        SELECT speaker_role as "role", content, id
         FROM messages
         WHERE conversation_id = ?
         AND speaker_role != 'tool'
@@ -429,6 +472,30 @@ function getConversationForDisplay(id) {
         }
     }
     return result;
+}
+*/
+function getConversationForDisplay(id) {
+    const unfilteredMessages = getConversationById(id);
+    const filteredMessages = []
+    for (const message of unfilteredMessages) {
+        const prev = filteredMessages[filteredMessages.length - 1];
+        if (message.role === 'user') {
+            filteredMessages.push(message);
+        } else if (message.role === 'assistant' && message.content !== null) {
+            if (typeof message.content !== 'string') { // I don't think that the content can be anything other than a string unless an image is present
+                filteredMessages.push({role: 'assistant', content: message.content});
+            } else if (prev?.role === 'assistant' && prev.content) {
+                if (typeof prev.content !== 'string') {
+                    prev.content[prev.content.length - 1].text += message.content;
+                } else {
+                    prev.content += message.content;
+                }
+            } else {
+                filteredMessages.push({role: 'assistant', content: message.content});
+            }
+        }
+    }
+    return filteredMessages;
 }
 
 function addConversation(title, directory) {
