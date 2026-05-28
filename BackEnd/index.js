@@ -292,6 +292,3 @@ sqlDal.setup()
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Backend listening on http://localhost:${PORT}`));
-
-// TODO: make the frontend send the modelId instead of model and routeId in chat requests
-// TODO: make the frontend send the conversationID in the chat request

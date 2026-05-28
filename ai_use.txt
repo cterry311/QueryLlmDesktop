@@ -3,3 +3,4 @@ creating of base UI
 creating the interface for adding sourses and models
 creating support for streaming responses
 creation of basic agentic loop
+added interface and code flow for getting user permissions for some tools
