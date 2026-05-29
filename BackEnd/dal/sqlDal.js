@@ -515,10 +515,23 @@ function pushMessage(message, conversationId, modelId) {
         WHERE conversation_id = ?
     `).get(conversationId).message_order;
 
+    let text = message.content
+    let containsImage = false
+    if (Array.isArray(message.content)) {
+        text = ''
+        for (const block of message.content) {
+            if (block.type === 'text') {
+                text += block.text
+            } else if (block.type === 'image_url') {
+                containsImage = true
+            }
+        }
+    }
+
     const messageId = db.prepare(`
         INSERT INTO messages (message_order, content, created_at, speaker_role, model_id, conversation_id)
         VALUES (?, ?, CURRENT_TIMESTAMP, ?, ?, ?)
-    `).run(messageOrder, message.content ?? null, role, modelId, conversationId).lastInsertRowid;
+    `).run(messageOrder, text ?? null, role, modelId, conversationId).lastInsertRowid;
 
     if (role === 'assistant' && message.tool_calls) {
         for (const tc of message.tool_calls) {
@@ -526,6 +539,17 @@ function pushMessage(message, conversationId, modelId) {
                 INSERT INTO tool_calls (message_id, tool_call_id, name, arguments)
                 VALUES (?, ?, ?, ?)
             `).run(messageId, tc.id, tc.function.name, tc.function.arguments);
+        }
+    }
+
+    if (containsImage) {
+        for (const block of message.content) {
+            if (block.type === 'image_url') {
+                db.prepare(`
+                    INSERT INTO images (image_data, message_id)
+                    VALUES (?, ?)
+                `).run(block.image_url.url, messageId);
+            }
         }
     }
 

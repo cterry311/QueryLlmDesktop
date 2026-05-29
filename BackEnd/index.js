@@ -122,7 +122,7 @@ app.post('/chat', async (req, res) => {
             ? req.body.directory
             : null;
 
-        if (typeof message !== 'string' || !message.trim()) {
+        if ((typeof message !== 'string' && !Array.isArray(message)) || !message) {
             return res.status(400).json({ error: 'message is required' });
         }
 

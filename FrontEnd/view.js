@@ -2,6 +2,9 @@ const messagesEl = document.getElementById('messages')
 const composerEl = document.getElementById('composer')
 const inputEl = document.getElementById('input')
 const sendBtn = document.getElementById('send-btn')
+const attachBtn = document.getElementById('attach-btn')
+const fileInput = document.getElementById('file-input')
+const attachmentsEl = document.getElementById('attachments')
 const modelSelect = document.getElementById('model-select')
 const sidebarListEl = document.getElementById('conversation-list')
 const newChatBtn = document.getElementById('new-chat-btn')
@@ -19,6 +22,7 @@ let conversations = []
 let pendingDirectory = null          // chosen before first message of a new chat
 let activeConversationDirectory = null // directory of the currently-open conversation (read-only)
 let activePermissionId = null
+let attachments = []
 
 function updateDirectoryBar() {
     const isNewChat = currentConversationId === null
@@ -101,13 +105,33 @@ async function openConversation(id) {
         activeConversationDirectory = result.directory || null
         pendingDirectory = null
         clearMessages()
+        console.log(JSON.stringify(result.messages, null, 2))
         for (const m of (result.messages || [])) {
             const who = m.role === 'user' ? 'user' : 'assistant'
             const bubble = addBubble('', who)
-            if (who === 'assistant') {
-                bubble.innerHTML = marked.parse(m.content || '')
+            bubble.innerHTML = ''
+            let textContent = ''
+            if (Array.isArray(m.content)) {
+                for (const chunk of m.content) {
+                    if (chunk.type === 'text') {
+                        textContent += chunk.text
+                    } else if (chunk.type === 'image_url') {
+                        const img = document.createElement('img')
+                        img.src = chunk.image_url.url
+                        bubble.appendChild(img)
+                    }
+                }
             } else {
-                bubble.textContent = m.content || ''
+                textContent = m.content || ''
+            }
+            if (who === 'assistant') {
+                const pElement = document.createElement('p')
+                pElement.innerHTML = marked.parse(textContent || '')
+                bubble.appendChild(pElement)
+            } else {
+                const pElement = document.createElement('p')
+                pElement.innerText = textContent || ''
+                bubble.appendChild(pElement)
             }
         }
         renderConversationList()
@@ -171,10 +195,41 @@ function addBubble(text, who, { pending = false } = {}) {
 }
 
 async function handleSend() {
-    const text = inputEl.value.trim()
-    if (!text) return
+    let content = inputEl.value.trim()
+    if (attachments.length > 0) {
+        content = [];
+        for (const a of attachments) {
+            content.push({
+                type: 'image_url',
+                image_url: { url: `data:${a.mimeType};base64,${a.base64}` }
+            });
+        }
+        const textValue = inputEl.value.trim();
+        if (textValue) {
+            content.push({ type: 'text', text: textValue });
+        }
+    }
+    if (!content) return
 
-    addBubble(text, 'user')
+
+
+    const bubble = addBubble(inputEl.value.trim(), 'user')
+    if (attachments.length > 0) {
+        bubble.innerHTML = ''
+        for (const a of attachments) {
+            const img = document.createElement('img')
+            img.src = `data:${a.mimeType};base64,${a.base64}`
+            bubble.appendChild(img)
+        }
+        const textValue = inputEl.value.trim();
+        if (textValue) {
+            const pElement = document.createElement('p')
+            pElement.innerText = textValue
+            bubble.appendChild(pElement)
+        }
+    }
+    attachments = []
+    attachmentsEl.innerHTML = ''
     inputEl.value = ''
     sendBtn.disabled = true
 
@@ -232,7 +287,7 @@ async function handleSend() {
         const lastPercent = modelSelect.value.lastIndexOf('%');
         const modelId = modelSelect.value.substring(0, lastPercent);
         const routeId = parseInt(modelSelect.value.substring(lastPercent + 1));
-        await window.llm.stream(text, modelId || 'openrouter/free', routeId || 0, isNewConversation, directoryForRequest);
+        await window.llm.stream(content, modelId || 'openrouter/free', routeId || 0, isNewConversation, directoryForRequest); //TODO: have it switch form string to array if image content is included
     } catch (err) {
         pending.classList.remove('pending')
         pending.textContent = `Error: ${err.message}`
@@ -294,6 +349,90 @@ async function respondPermission(decision) {
 
 permissionAllowBtn.addEventListener('click', () => respondPermission('allow'))
 permissionDenyBtn.addEventListener('click', () => respondPermission('deny'))
+
+attachBtn.addEventListener('click', () => {
+    fileInput.click();
+});
+
+fileInput.addEventListener('change', async () => {
+    const files = Array.from(fileInput.files);
+    for (const file of files) {
+        const { base64, mimeType } = await resizeImage(file);
+        const id = crypto.randomUUID();
+        attachments.push({ id, base64, mimeType });
+        renderAttachment(id, base64);
+    }
+    fileInput.value = "";
+});
+
+function resizeImage(file, maxWidth = 800, maxHeight = 800, quality = 0.8) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+            // calculate new dimensions preserving aspect ratio
+            let width = img.width;
+            let height = img.height;
+            if (width > maxWidth || height > maxHeight) {
+                const ratio = Math.min(maxWidth / width, maxHeight / height);
+                width = Math.round(width * ratio);
+                height = Math.round(height * ratio);
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+            URL.revokeObjectURL(url); // cleanup
+            resolve({
+                base64: canvas.toDataURL('image/jpeg', quality).split(',')[1],
+                mimeType: 'image/jpeg'
+            });
+        };
+        img.src = url;
+    });
+}
+
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            // reader.result is the full data URI, strip the prefix to get raw base64
+            const base64 = reader.result.split(',')[1];
+            resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+function renderAttachment(id, base64) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'attachment-preview';
+    wrapper.dataset.id = id;
+
+    const img = document.createElement('img');
+    // for display we need the full data URI
+    img.src = `data:image/*;base64,${base64}`;
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'attachment-remove';
+    removeBtn.type = 'button'; // prevent form submit
+    removeBtn.textContent = 'x';
+    removeBtn.addEventListener('click', () => removeAttachment(id));
+
+    wrapper.appendChild(img);
+    wrapper.appendChild(removeBtn);
+    attachmentsEl.appendChild(wrapper);
+}
+
+function removeAttachment(id) {
+    attachments = attachments.filter(a => a.id !== id);
+    const el = attachmentsEl.querySelector(`[data-id="${id}"]`);
+    if (el) el.remove();
+}
+
 
 composerEl.addEventListener('submit', (e) => {
     e.preventDefault()

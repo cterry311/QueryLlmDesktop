@@ -33,12 +33,17 @@
             <main id="messages" class="messages"></main>
 
             <form id="composer" class="composer">
-                <textarea
-                    id="input"
-                    class="input"
-                    placeholder="Type a message... (Enter to send, Shift+Enter for newline)"
-                    rows="2"></textarea>
-                <button id="send-btn" type="submit" class="send-btn">Send</button>
+                <div id="attachments" class="attachments"></div><br>
+                <input id="file-input" type="file" accept="image/*" multiple class="hidden">
+                <div id="composer-content" class="composer-content">
+                    <textarea
+                            id="input"
+                            class="input"
+                            placeholder="Type a message... (Enter to send, Shift+Enter for newline)"
+                            rows="2"></textarea>
+                    <button id="attach-btn" type="button" class="send-btn">Attach</button>
+                    <button id="send-btn" type="submit" class="send-btn">Send</button>
+                </div>
             </form>
         </div>
 
