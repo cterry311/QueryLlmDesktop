@@ -1,10 +1,3 @@
-Fix Tool Response Saving/Retrival Problem
-    Promblem:
-    - Tool Responses are not being given as context to the LLM for past agentic processes
-    - Tooll Responses are still availible during current agentic processes
-    CheckList:
-    - Check if the tool response are being saved to the database
-    - check if the tool responses are propertly being retrived from the database
 Implement ability to view current agentic process, have short blurb to be displayed to the user
     Checklist:
     - have a thing to yeild while streaming to indeicate what should be displayed to the user
