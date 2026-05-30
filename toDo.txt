@@ -1,0 +1,46 @@
+Fix Tool Response Saving/Retrival Problem
+    Promblem:
+    - Tool Responses are not being given as context to the LLM for past agentic processes
+    - Tooll Responses are still availible during current agentic processes
+    CheckList:
+    - Check if the tool response are being saved to the database
+    - check if the tool responses are propertly being retrived from the database
+Implement ability to view current agentic process, have short blurb to be displayed to the user
+    Checklist:
+    - have a thing to yeild while streaming to indeicate what should be displayed to the user
+    - fix user interface to display the current agentic process based on the streamed input
+    - fix the UI to display the current agentic process even when the model has partially streamed a response
+Finish up the Settings menu in the UI, add a memory viewer there as well as implement the currently existing things
+    Checklist:
+    - Implement routes in the backend to acomplish the settings menu processes
+    - Implement the Settings poppup in the UI to have it display the stuff
+Closing the UI shuts down the application
+    Checklist:
+    - Have a way of detecting when the UI is closed
+    - Shut down the application when the UI is closed
+Implement Tool for Generating Images
+    Checklist:
+    - Implement the tool in the backend
+    - Implement the tool in the UI
+    - Check Openrouter Documentation for it
+Bundle Application into a single executable
+    Checklist:
+    - Bundle the application into a single executable
+    - Make sure the application can be run from anywhere
+    - if the user does not have docker installed make sure that the sandbox fails gracefully
+Prepare Presentation for the Application
+    Checklist:
+    - Prepare a presentation for the application
+    - Practice what to Demonstrate to cover all bases during presentation
+Context Managment:
+    Problem:
+    - Context is not being managed right now
+    - the context window of models is being overflowed
+    Checklist:
+    - Check if model errored to to exessive context window
+    - Implement ability to summarize past context in a shortened form
+    - Save Summary to the database
+Sub Agent Tool
+    Checklist:
+    - Implement the ability to spawn a sub agent and have it work side by side with the main agent
+    - Implement the ability for tool permissions for sub agent to be sent to the user

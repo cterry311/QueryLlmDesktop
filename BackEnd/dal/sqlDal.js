@@ -507,6 +507,8 @@ function addConversation(title, directory) {
 }
 
 function pushMessage(message, conversationId, modelId) {
+    console.log("pushing message")
+    console.log(JSON.stringify(message, null, 2))
     const role = message.role;
 
     const messageOrder = db.prepare(`

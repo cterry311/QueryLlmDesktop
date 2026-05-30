@@ -120,6 +120,11 @@ async function* callModel(context, model, url, key, conversationId, modelId, dir
                     tool_call_id: tc.id,
                     content: typeof result === 'string' ? result : JSON.stringify(result)
                 });
+                sqlDal.pushMessage({
+                    role: 'tool',
+                    tool_call_id: tc.id,
+                    content: typeof result === 'string' ? result : JSON.stringify(result)
+                }, conversationId, modelId)
             }
 
         } else {
