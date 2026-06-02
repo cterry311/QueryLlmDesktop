@@ -49,13 +49,13 @@ Query/
 
 Query is split into isolated services, each with a clear responsibility:
 
-| Service | Description |
-|---|---|
-| **Frontend** | Electron desktop app. Communicates with the backend over a local WebSocket/HTTP connection. Runs natively on the host machine. |
-| **Backend** | Node.js service handling LLM API calls, agent orchestration, tool routing, and database access. |
+| Service | Description                                                                                                                         |
+|---|-------------------------------------------------------------------------------------------------------------------------------------|
+| **Frontend** | Electron desktop app. Communicates with the backend over a local WebSocket/HTTP connection. Runs natively on the host machine.      |
+| **Backend** | Node.js service handling LLM API calls, agent orchestration, tool routing, and database access.                                     |
 | **Agent Sandbox** | Isolated Docker container with no network access. Used exclusively for executing agent-generated code and terminal commands safely. |
-| **SQL Database** | SQLite. Stores full conversation history locally. |
-| **Vector Database** | Chroma. Stores embedded conversation memory for semantic recall. |
+| **SQL Database** | SQLite. Stores full conversation history locally.                                                                                   |
+| **Vector Database** | LanceDB. Stores embedded conversation memory for semantic recall.                                                                   |
 
 > The frontend runs natively and is not containerized, as Electron requires direct access to the host OS display. All other services run inside Docker containers managed by Docker Compose.
 
@@ -88,15 +88,15 @@ API endpoints and keys are configurable per provider in the application settings
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Desktop UI | Electron, HTML, CSS, JavaScript |
-| Backend | Node.js |
-| Database | SQLite  |
-| Vector Memory | Chroma / pgvector |
-| Containerization | Docker, Docker Compose |
+| Layer | Technology                              |
+|---|-----------------------------------------|
+| Desktop UI | Electron, HTML, CSS, JavaScript         |
+| Backend | Node.js                                 |
+| Database | SQLite                                  |
+| Vector Memory | LanceDB                                 |
+| Containerization | Docker, Docker Compose                  |
 | LLM APIs | OpenRouter, OpenAI-compatible endpoints |
- | Search API | LangSearch |
+ | Search API | LangSearch                              |
 
 ---
 

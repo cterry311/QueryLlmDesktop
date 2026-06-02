@@ -1,8 +1,3 @@
-Implement ability to view current agentic process, have short blurb to be displayed to the user
-    Checklist:
-    - have a thing to yeild while streaming to indeicate what should be displayed to the user
-    - fix user interface to display the current agentic process based on the streamed input
-    - fix the UI to display the current agentic process even when the model has partially streamed a response
 Finish up the Settings menu in the UI, add a memory viewer there as well as implement the currently existing things
     Checklist:
     - Implement routes in the backend to acomplish the settings menu processes

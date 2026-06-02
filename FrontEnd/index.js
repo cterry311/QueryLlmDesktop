@@ -20,7 +20,7 @@ app.whenReady().then(createWindow)
 
 const BACKEND_URL = 'http://localhost:3000'
 
-async function sendToLLM(message, model, routeId, newConversation, directory, onChunk, onMeta, onPermission) {
+async function sendToLLM(message, model, routeId, newConversation, directory, onChunk, onMeta, onPermission, onBlurb) {
     const res = await fetch(`${BACKEND_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -61,6 +61,7 @@ async function sendToLLM(message, model, routeId, newConversation, directory, on
                 if (parsed.chunk) onChunk(parsed.chunk);
                 if (parsed.meta && onMeta) onMeta(parsed.meta);
                 if (parsed.permission && onPermission) onPermission(parsed.permission);
+                if (parsed.tool_blurb && onBlurb) onBlurb(parsed.tool_blurb);
             } catch { }
         }
     }
@@ -121,7 +122,8 @@ ipcMain.handle('llm:stream', async (event, message, model, routeId, newConversat
             directory,
             (chunk) => { event.sender.send('llm:chunk', chunk); },
             (meta) => { event.sender.send('llm:meta', meta); },
-            (perm) => { event.sender.send('llm:permission', perm); }
+            (perm) => { event.sender.send('llm:permission', perm); },
+            (blurb) => { event.sender.send('llm:tool-blurb', blurb); }
         );
         event.sender.send('llm:done');
     } catch (err) {

@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('llm', {
     onError: (cb) => ipcRenderer.once('llm:error', (_e, err) => cb(err)),
     onPermissionRequest: (cb) => ipcRenderer.on('llm:permission', (_e, perm) => cb(perm)),
     respondPermission: (id, decision) => ipcRenderer.invoke('permission:respond', id, decision),
+    onBlurb: (cd) => ipcRenderer.on('llm:tool-blurb', (_e, blurb) => cd(blurb)),
     // Important: clean up listeners between messages
     removeStreamListeners: () => {
         ipcRenderer.removeAllListeners('llm:chunk');
@@ -18,6 +19,7 @@ contextBridge.exposeInMainWorld('llm', {
         ipcRenderer.removeAllListeners('llm:done');
         ipcRenderer.removeAllListeners('llm:error');
         ipcRenderer.removeAllListeners('llm:permission');
+        ipcRenderer.removeAllListeners('llm:tool-blurb');
     },
     models: () => ipcRenderer.invoke('llm:models'),
     setApiConfig: (config) => ipcRenderer.invoke('api:set-config', config),

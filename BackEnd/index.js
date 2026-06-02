@@ -161,6 +161,9 @@ app.post('/chat', async (req, res) => {
                 res.write(`data: ${JSON.stringify({ permission: { id: chunk.id, tool: chunk.tool, args: chunk.args } })}\n\n`);
                 continue;
             }
+            if (chunk && chunk._type === 'tool_blurb') {
+                res.write(`data: ${JSON.stringify({ tool_blurb: { blurb: chunk.blurb, tool: chunk.tool } })}\n\n`);
+            }
             const content = chunk.choices?.[0]?.delta?.content;
             if (content) {
                 fullReply += content;

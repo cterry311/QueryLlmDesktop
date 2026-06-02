@@ -122,11 +122,30 @@ const functionsById = {
         const safe = resolveSafePath(ctx.directory, args?.path);
         if (!safe) return { error: OUT_OF_SCOPE_MESSAGE };
         try {
+            const startLine = args?.startLine || 1;
+            const endLine = args?.endLine || Infinity;
+            const includeLineNumbers = args?.includeLineNumbers || false;
+            if (startLine < 1) return { error: "startLine must be greater than 0" };
+            if (endLine < startLine) return { error: "endLine must be greater than startLine" };
             const stat = await fsp.stat(safe);
             if (stat.isDirectory()) return { error: "Path refers to a directory, not a file." };
             if (stat.size > 1024 * 1024) return { error: "File is larger than 1MB and cannot be read." };
             const content = await fsp.readFile(safe, 'utf-8');
-            return { path: args.path, content };
+            const lines = content.split('\n');
+            if (startLine > lines.length) return { error: "startLine is out of range" };
+            const returnLines = lines.slice(startLine - 1, endLine)
+            let returnContent = ''
+            if (includeLineNumbers) {
+                returnLines.forEach((line, index) => {
+                    returnContent += `${index + startLine}| ${line}\n`;
+                });
+            } else {
+                returnLines.forEach(line => {
+                    returnContent += `${line}\n`;
+                });
+            }
+            returnContent = returnContent.slice(0, -1);
+            return { path: args.path, content: returnContent };
         } catch (err) {
             return { error: `Failed to read file: ${err.message}` };
         }
@@ -138,9 +157,29 @@ const functionsById = {
         if (!safe) return { error: OUT_OF_SCOPE_MESSAGE };
         if (typeof args?.content !== 'string') return { error: "content must be a string" };
         try {
+            const startLine = args?.startLine || 1;
+            const endLine = args?.endLine || Infinity;
+            if (startLine < 1) return { error: "startLine must be greater than 0" };
+            if (endLine < startLine) return { error: "endLine must be greater than startLine" };
             await fsp.mkdir(path.dirname(safe), { recursive: true });
-            await fsp.writeFile(safe, args.content, 'utf-8');
-            return { ok: true, path: args.path };
+            const content = await fsp.readFile(safe, 'utf-8').catch(() => '');
+            const lines = content.split('\n');
+            if (startLine > lines.length) return { error: "startLine is out of range" };
+            const leadingLines = lines.slice(0, startLine - 1)
+            const trailingLines = lines.slice(endLine)
+            const newContent = args.content.split('\n')
+            const newFileLines = leadingLines.concat(newContent).concat(trailingLines)
+            const newFileContents = newFileLines.join('\n');
+            await fsp.writeFile(safe, newFileContents, 'utf-8');
+            const returnStartLine = startLine - 2 > 0 ? startLine - 2 : 1;
+            const returnEndLine = endLine + 1
+            const returnLines = newFileLines.slice(returnStartLine - 1, returnEndLine)
+            let returnContent = ''
+            returnLines.forEach((line, index) => {
+                returnContent += `${index + returnStartLine}| ${line}\n`;
+            })
+            returnContent = returnContent.slice(0, -1);
+            return { ok: true, path: args.path, context: returnContent };
         } catch (err) {
             return { error: `Failed to write file: ${err.message}` };
         }
@@ -385,12 +424,15 @@ const tools = [
         "type": "function",
         "function": {
             "name": "view_file",
-            "description": "View the text content of a file inside the conversation's attached directory. The path must be a path relative to the conversation directory; paths outside the directory are rejected. Returns an error if the conversation has no attached directory.",
+            "description": "View the text content of a file inside the conversation's attached directory. the line arguments work as follows, if given 3 as startLine and 6 as endLine, it would return lines 3, 4 and 5. The path must be a path relative to the conversation directory; paths outside the directory are rejected. Returns an error if the conversation has no attached directory.",
             "parameters": {
                 "type": "object",
                 "required": ["path"],
                 "properties": {
-                    "path": { "type": "string", "description": "Path of the file to view, relative to the conversation's directory." }
+                    "path": { "type": "string", "description": "Path of the file to view, relative to the conversation's directory. " },
+                    "startLine": { "type": "number", "description": "1 based index, the line number to start reading from inclusive, example, if it was 3, it would start reading at line 3 and including line 3 in it's output, if left blank will start from the first line of the file. Defaults to start of file." },
+                    "endLine": { "type": "number", "description": "1 based index, the line number to stop stop reading at exclusive, example, if it was 5, it would read all lines up to line 5 and stop there without reading line 5, if left blank, will read up to the end of the file including the final line. Defaults to the end of the file" },
+                    "includeLineNumbers": { "type": "boolean", "description": "Whether to include line numbers in the output. Defaults to false." },
                 }
             }
         }
@@ -399,13 +441,15 @@ const tools = [
         "type": "function",
         "function": {
             "name": "edit_file",
-            "description": "Create a new file or overwrite an existing file inside the conversation's attached directory with the provided text content. The user must confirm before the write occurs. The path must be relative to the conversation directory; paths outside the directory are rejected. Returns an error if the conversation has no attached directory or if the user denies the edit.",
+            "description": "Create a new file or write to an existing file inside the conversation's attached directory with the provided text content. all lines between the two provided will be overwritten by the new content. for example, if 3 was provided as startLine and 6 as endLine and 2 lines of code as content, then lines 3, 4, and 5 would be replaced with the two lines of code provided. The user must confirm before the write occurs. The path must be relative to the conversation directory; paths outside the directory are rejected. Returns an error if the conversation has no attached directory or if the user denies the edit. the edited content plus 2 lines of context on either side with line numbers included will be provided as output",
             "parameters": {
                 "type": "object",
                 "required": ["path", "content"],
                 "properties": {
                     "path": { "type": "string", "description": "Path of the file to create or overwrite, relative to the conversation's directory." },
-                    "content": { "type": "string", "description": "The full text content to write to the file." }
+                    "content": { "type": "string", "description": "The text content to write to the file." },
+                    "startLine": { "type": "number", "description": "The line number to start writing to inclusive. for example, if 3 was provided, overwrite line 3 and the lines following it. Defaults to 1." },
+                    "endLine": { "type": "number", "description": "The line number to stop writing to exclusive. for example, if 6 was provider, it would stop overwriting at line 6, so line 6 itself would not be overwritten. Defaults to the end of the file including final line" },
                 }
             }
         }
@@ -552,6 +596,26 @@ const tools = [
     }
 ];
 
+const toolBlurbs = {
+    "execute_code_sandbox": "Executing code...",
+    "web_search": "Searching the web...",
+    "fetch_request": "Making a Web Request...",
+    "scratchpad": "Planning...",
+    "list_directory": "viewing directory...",
+    "view_file": "viewing file...",
+    "edit_file": "editing file...",
+    "execute_command": "executing command...",
+    "spawn_process": "spawning process...",
+    "kill_process": "killing process...",
+    "view_process": "viewing process...",
+    "get_process_list": "getting processes...",
+    "add_memory": "adding memory...",
+    "get_memory": "getting memory...",
+    "add_memory_context": "adding memory context...",
+    "clear_memory_context": "clearing memory context...",
+    "remove_memory": "removing memory..."
+}
+
 function clearContext() {
     processes.forEach(proc => proc.kill());
     processes.clear();
@@ -560,4 +624,4 @@ function clearContext() {
 
 const TOOLS_REQUIRING_PERMISSION = new Set(['edit_file', 'execute_command', 'spawn_process']);
 
-module.exports = { tools, functionsById, TOOLS_REQUIRING_PERMISSION, clearContext };
+module.exports = { tools, functionsById, TOOLS_REQUIRING_PERMISSION, clearContext, toolBlurbs };

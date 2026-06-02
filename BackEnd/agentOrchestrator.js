@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const { agentStream } = require('./llmClient');
-const { tools, functionsById, TOOLS_REQUIRING_PERMISSION, clearContext } = require('./toolHandlers');
+const { tools, functionsById, TOOLS_REQUIRING_PERMISSION, clearContext, toolBlurbs} = require('./toolHandlers');
 const sqlDal = require('./dal/sqlDal');
 
 const permissionResolvers = new Map();
@@ -80,8 +80,18 @@ async function* callModel(context, model, url, key, conversationId, modelId, dir
                 tool_calls: toolCalls
             }, conversationId, modelId)
             assistantContent = '';
+            let first = true;
 
             for (const tc of toolCalls) {
+                if (first) {
+                    first = false;
+                    const blurb = toolBlurbs[tc.function.name]
+                    yield {
+                        _type: 'tool_blurb',
+                        tool: tc.function.name,
+                        blurb: blurb
+                    }
+                }
                 let args;
                 try {
                     args = JSON.parse(tc.function.arguments || '{}');

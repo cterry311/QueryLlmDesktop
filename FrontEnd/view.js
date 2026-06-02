@@ -233,9 +233,14 @@ async function handleSend() {
     inputEl.value = ''
     sendBtn.disabled = true
 
-    const pending = addBubble('thinking...', 'assistant', { pending: true })
+    const pending = addBubble('', 'assistant', { pending: false })
     let rawReply = '';
     let firstChunk = true;
+
+    const blurbElement = document.createElement('p')
+    blurbElement.classList.add('pending')
+    blurbElement.textContent = 'Waiting...'
+    pending.appendChild(blurbElement)
 
 
 
@@ -245,11 +250,25 @@ async function handleSend() {
     // Clean up any leftover listeners from a previous message
     window.llm.removeStreamListeners();
 
+    window.llm.onBlurb((blurb) => {
+        blurbElement.textContent = blurb.blurb;
+        const children = pending.children;
+        let found = false
+        for (let i = 0; i < children.length; i++) {
+            if (children[i] === blurbElement) {
+                found = true
+            }
+        }
+        if (!found) {
+            pending.appendChild(blurbElement)
+        }
+        console.log("blurb", blurb.blurb)
+    })
+
     window.llm.onChunk((chunk) => {
         if (firstChunk) {
             pending.textContent = ''; // clear placeholder only on first real chunk
             firstChunk = false;
-            pending.classList.remove('pending')
         }
         rawReply += chunk;
         pending.innerHTML = marked.parse(rawReply);
@@ -273,6 +292,7 @@ async function handleSend() {
 
     window.llm.onDone(() => {
         sendBtn.disabled = false;
+        pending.children[pending.children.length - 1].remove();
         inputEl.focus();
     });
 
