@@ -1,3 +1,13 @@
+:root{
+    --light-blue: #4a6cf7;
+    --deep-blue: #3450c6;
+    --gray-blue: #2a2a43;
+    --light-gray: #3f4147;
+    --gray: #2b2d31;
+    --dark-gray: #1e1f22;
+    --black: #17181b;
+}
+
 * { box-sizing: border-box; }
 
 html, body {
@@ -11,6 +21,32 @@ html, body {
 body {
     display: flex;
     flex-direction: row;
+}
+::-webkit-scrollbar {
+    width: 10px; /* For vertical scrollbar */
+}
+
+/*
+ * 2. Style the track (the groove the thumb slides on)
+ */
+::-webkit-scrollbar-track {
+    background: #2f2f3f; /* Light gray background */
+    border-radius: 10px; /* Optional rounded corners for the track */
+}
+
+/*
+ * 3. Style the thumb (the draggable part)
+ */
+::-webkit-scrollbar-thumb {
+    background: #888; /* Medium gray color for the thumb */
+    border-radius: 10px; /* Optional rounded corners for the thumb */
+}
+
+/*
+ * 4. Style the thumb on hover (for better UX)
+ */
+::-webkit-scrollbar-thumb:hover {
+    background: #6969ed; /* Darker gray when the user hovers over it */
 }
 
 .sidebar {
