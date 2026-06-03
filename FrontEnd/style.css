@@ -390,10 +390,13 @@ body {
 .modal {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.modal-dim {
+    background: rgba(0, 0, 0, 0.5);
 }
 
 .hidden { display: none; }
@@ -735,3 +738,59 @@ body {
 
 
 
+.pulse-model-select {
+    position: absolute;
+    top: 1%;
+    left: 77.8%;
+    width: 323px;
+    height: 35px;
+    border-radius: 5%;
+    border: 5px solid var(--deep-blue);
+    animation: pulse 1.5s infinite;
+}
+
+.pulse-new-chat {
+    position: absolute;
+    top: .6%;
+    left: .4%;
+    width: 224px;
+    height: 45px;
+    border-radius: 5%;
+    border: 5px solid var(--deep-blue);
+    animation: pulse 1.5s infinite;
+}
+
+.pulse-chat {
+    position: absolute;
+    top: 92.5%;
+    left: 14.8%;
+    width: 1280px;
+    height: 65px;
+    border-radius: 5%;
+    border: 5px solid var(--deep-blue);
+    animation: pulse 1.5s infinite;
+}
+
+
+.pulse-directory {
+    position: absolute;
+    top: 6%;
+    left: 14.8%;
+    width: 110px;
+    height: 32px;
+    border-radius: 5%;
+    border: 5px solid var(--deep-blue);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 var(--deep-blue);
+    }
+    70% {
+        box-shadow: 0 0 0 20px rgba(255, 107, 107, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 107, 107, 0);
+    }
+}

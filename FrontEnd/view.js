@@ -499,6 +499,7 @@ function showBaseSettings() {
     memoryView.classList.add('hidden')
     aboutView.classList.add('hidden')
     settingsList.classList.remove('hidden')
+    settingsModal.classList.add('modal-dim')
 }
 
 function showApiDetails() {
@@ -528,6 +529,7 @@ function showAbout() {
     settingsBack.classList.remove('hidden')
     settingsList.classList.add('hidden')
     aboutView.classList.remove('hidden')
+    settingsModal.classList.remove('modal-dim')
 }
 
 function openSettings() {
