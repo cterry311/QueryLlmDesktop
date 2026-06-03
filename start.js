@@ -13,7 +13,14 @@ async function startup() {
 
     const backend = spawn("node", ["index.js"], {
         cwd: "BackEnd",
-        shell: true
+        shell: true,
+
+    })
+
+    backend.on('exit', (code) => {
+        console.log(`Backend process exited with code ${code}`);
+        root.kill()
+        process.exit(0)
     })
 
     backend.stdout.on("data", (data) => console.log("Backend: " + data.toString()));
@@ -29,8 +36,15 @@ async function startup() {
     frontend.stdout.on("data", (data) => console.log("Frontend: " + data.toString()));
     frontend.stderr.on("data", (data) => console.error("Frontend: " + data.toString()));
 
+
 }
 
+
+
+
+
 startup()
+
+
 
 //"http://localhost:12434/engines/llama.cpp/v1/chat/completions"

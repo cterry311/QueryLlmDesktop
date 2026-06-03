@@ -49,4 +49,14 @@ app.post('/execute', async (req, res) => {
     }
 })
 
-app.listen(3002, () => console.log('Sandbox running on port 3002'))
+let server;
+
+app.get('/shutdown', (req, res) => {
+    server.close(() => {
+        console.log('Sandbox server shut down')
+        res.send('Sandbox server shut down')
+        process.exit()
+    })
+})
+
+server = app.listen(3002, () => console.log('Sandbox running on port 3002'))

@@ -296,10 +296,24 @@ app.post('/getMemory', async (req, res) => {
     res.json({ results });
 })
 
+let server;
+
+app.get('/shutdown', (req, res) => {
+    server.close(async () => {
+        console.log('Backend Shutting down')
+        process.exit(0)
+    })
+    res.json({ ok: true })
+})
+
 
 
 sqlDal.setup()
 
+setInterval(() => {
+    console.log("Backend is running")
+}, 10000)
+
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Backend listening on http://localhost:${PORT}`));
+server = app.listen(PORT, () => console.log(`Backend listening on http://localhost:${PORT}`));

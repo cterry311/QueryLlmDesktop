@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron')
 const path = require('path')
 
+
 function createWindow() {
     const win = new BrowserWindow({
         width: 1100,
@@ -13,6 +14,11 @@ function createWindow() {
     })
     win.loadFile('index.html')
     win.webContents.openDevTools() // remove this when done developing
+    win.on('closed', async () => {
+        await fetch(`${BACKEND_URL}/shutdown`)
+        console.log("Frontend Shutting Down")
+        process.exit(0)
+    })
 }
 
 app.whenReady().then(createWindow)
@@ -209,3 +215,7 @@ ipcMain.handle('memory:get', async (_event, prompt) => {
         return { ok: false, error: err.message }
     }
 })
+
+setInterval(() => {
+    console.log("Frontend is running")
+}, 10000)
