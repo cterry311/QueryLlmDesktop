@@ -24,6 +24,12 @@ let activeConversationDirectory = null // directory of the currently-open conver
 let activePermissionId = null
 let attachments = []
 
+
+function setTheme(theme) {
+    localStorage.setItem('theme', theme)
+    document.body.className = theme
+}
+
 function updateDirectoryBar() {
     const isNewChat = currentConversationId === null
     const displayDir = isNewChat ? pendingDirectory : activeConversationDirectory
@@ -470,15 +476,19 @@ inputEl.addEventListener('keydown', (e) => {
 const settingsTitle = document.getElementById('settings-title')
 const settingsBack = document.getElementById('settings-back')
 const settingsList = document.getElementById('settings-list')
+
 const apiView = document.getElementById('api-details-view')
 const apiPairsEl = document.getElementById('api-pairs')
 const apiAddPairBtn = document.getElementById('api-add-pair')
 const apiSaveBtn = document.getElementById('api-save')
 
+const themeView = document.getElementById('theme-details-view')
+
 function showBaseSettings() {
     settingsTitle.textContent = 'Settings'
     settingsBack.classList.add('hidden')
     apiView.classList.add('hidden')
+    themeView.classList.add('hidden')
     settingsList.classList.remove('hidden')
 }
 
@@ -488,6 +498,13 @@ function showApiDetails() {
     settingsList.classList.add('hidden')
     apiView.classList.remove('hidden')
     if (!apiPairsEl.children.length) addPair()
+}
+
+function showThemeDetails() {
+    settingsTitle.textContent = 'Theme'
+    settingsBack.classList.remove('hidden')
+    settingsList.classList.add('hidden')
+    themeView.classList.remove('hidden')
 }
 
 function openSettings() {
@@ -508,7 +525,11 @@ document.querySelectorAll('#settings-list button').forEach((btn) => {
         const key = btn.dataset.setting
         if (key === 'api') {
             showApiDetails()
-        } else if (key === 'clear') {
+        } else if (key === 'theme') {
+            showThemeDetails()
+        } else if (key === 'memories') {
+
+        } else if (key === 'about') {
 
         } else {
             alert(`Settings: "${key}" — not implemented yet.`)
@@ -627,3 +648,18 @@ apiSaveBtn.addEventListener('click', async () => {
         alert(`Failed to save API config: ${err.message}`)
     }
 })
+
+// Theme Settings --------------------------------------------------------------------
+
+themeView.addEventListener('click', (e) => {
+    if (e.target.tagName === 'BUTTON') {
+        const theme = e.target.id
+        setTheme(theme)
+    }
+})
+
+
+const fetchedTheme = localStorage.getItem('theme')
+if (fetchedTheme) {
+    setTheme(fetchedTheme)
+}

@@ -73,7 +73,7 @@
                 <ul id="settings-list" class="settings-list">
                     <li><button data-setting="api">API Details</button></li>
                     <li><button data-setting="theme">Appearance / theme</button></li>
-                    <li><button data-setting="clear">Clear conversation</button></li>
+                    <li><button data-setting="memories">Memories</button></li>
                     <li><button data-setting="about">About</button></li>
                 </ul>
 
@@ -83,6 +83,37 @@
                     <div class="api-actions">
                         <button id="api-save" class="api-save" type="button">Save</button>
                     </div>
+                </div>
+
+                <div id="theme-details-view" class="theme-view hidden">
+                    <div class="theme-options">
+                        <div class="theme-options-sub light-theme-options">
+                            <h3>Light themes</h3>
+                            <button id="light-theme-blue" type="button" class="light-theme-blue send-btn">Blue</button>
+                            <button id="light-theme-orange" type="button" class="light-theme-orange send-btn">Orange</button>
+                            <button id="light-theme-cyan" type="button" class="light-theme-cyan send-btn">Cyan</button>
+                            <button id="light-theme-pink" type="button" class="light-theme-pink send-btn">Pink</button>
+                        </div>
+                        <div class="theme-options-sub dark-theme-options">
+                            <h3>Dark themes</h3>
+                            <button id="dark-theme-blue" type="button" class="dark-theme-blue send-btn">Blue</button>
+                            <button id="dark-theme-orange" type="button" class="dark-theme-orange send-btn">Orange</button>
+                            <button id="dark-theme-cyan" type="button" class="dark-theme-cyan send-btn">Cyan</button>
+                            <button id="dark-theme-pink" type="button" class="dark-theme-pink send-btn">Pink</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="memories-view" class="memories-view hidden">
+                    <h3>Search Memories</h3>
+                    <label for="memories-input">Search memories:</label>
+                    <input id="memories-input" type="text" placeholder="Search memories..."/>
+                    <button id="memories-clear" type="button" class="memories-search send-btn">Clear memories</button>
+                    <ul id="memories-list" class="memories-list"></ul>
+                </div>
+
+                <div id="about-view" class="about-view hidden">
+
                 </div>
             </div>
         </div>

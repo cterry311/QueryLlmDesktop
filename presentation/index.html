@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Query — Presentation</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="deck" id="deck">
+
+    <!-- Slide 1: Title -->
+    <section class="slide title-slide active" data-slide="1">
+      <div class="content">
+        <h1 class="brand">Query</h1>
+        <p class="tagline">A desktop interface for Large Language Models</p>
+        <p class="subtitle">Conversational chat &middot; Autonomous agents &middot; Local-first</p>
+      </div>
+      <div class="footer-bar"></div>
+    </section>
+
+    <!-- Slide 2: What is Query? -->
+    <section class="slide" data-slide="2">
+      <h2>What is Query?</h2>
+      <div class="content two-col">
+        <div>
+          <p>
+            Query is an <strong>Electron desktop application</strong> for
+            interacting with Large Language Models.
+          </p>
+          <p>
+            It supports both <strong>simple conversational chat</strong> and
+            fully <strong>autonomous agentic workflows</strong>, with a focus on
+            flexibility and privacy.
+          </p>
+          <ul class="bullets">
+            <li>Bring your own API keys</li>
+            <li>Your data stays on your machine</li>
+            <li>Works with cloud or local models</li>
+          </ul>
+        </div>
+        <div class="callout">
+          <div class="callout-title">The Idea</div>
+          <p>
+            One desktop client that can talk to <em>any</em> OpenAI-compatible
+            model and, when you let it, act on its own to get things done.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 3: Capabilities -->
+    <section class="slide" data-slide="3">
+      <h2>What it can do</h2>
+      <div class="content">
+        <div class="feature-grid">
+          <div class="feature">
+            <div class="feature-title">Multi-model support</div>
+            <p>Connect to OpenRouter, Ollama, Docker Model Runner, or any OpenAI-compatible endpoint.</p>
+          </div>
+          <div class="feature">
+            <div class="feature-title">Agentic workflows</div>
+            <p>Models can plan, act, and observe in a think&rarr;act&rarr;observe loop to complete multi-step tasks.</p>
+          </div>
+          <div class="feature">
+            <div class="feature-title">Persistent memory</div>
+            <p>A vector database gives the model long-term recall across conversations.</p>
+          </div>
+          <div class="feature">
+            <div class="feature-title">Local file access</div>
+            <p>With explicit user permission, agents can read and write files on the host machine.</p>
+          </div>
+          <div class="feature">
+            <div class="feature-title">Conversation history</div>
+            <p>Every conversation is stored in a local SQLite database &mdash; nothing leaves your machine.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 4: Agent Tools -->
+    <section class="slide" data-slide="4">
+      <h2>Agent tools</h2>
+      <p class="lede">When operating in agent mode, the model is given access to a set of tools it can invoke autonomously:</p>
+      <div class="content">
+        <div class="tools">
+          <div class="tool"><span class="tool-name">Web search</span><span class="tool-desc">Search the web and retrieve results via LangSearch</span></div>
+          <div class="tool"><span class="tool-name">HTTP requests</span><span class="tool-desc">Make arbitrary web requests to any endpoint</span></div>
+          <div class="tool"><span class="tool-name">Code execution</span><span class="tool-desc">Run code inside an isolated Docker sandbox</span></div>
+          <div class="tool"><span class="tool-name">Memory recall / creation</span><span class="tool-desc">Query the vector database for relevant past context</span></div>
+          <div class="tool"><span class="tool-name">File read / write</span><span class="tool-desc">Touch local files &mdash; only with explicit user permission</span></div>
+            <div class="tool"><span class="tool-name">Powershell Commands</span><span class="tool-desc">Run Command with user permission</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 5: Architecture -->
+    <section class="slide" data-slide="5">
+      <h2>Architecture</h2>
+      <p class="lede">Query is split into isolated services, each with a single clear responsibility.</p>
+      <div class="content">
+        <div class="arch-diagram">
+          <div class="arch-row">
+            <div class="arch-node frontend">
+              <div class="node-title">Frontend</div>
+              <div class="node-sub">Electron desktop app<br/>HTML / CSS / JS</div>
+            </div>
+            <div class="arrow">&harr;</div>
+            <div class="arch-node backend">
+              <div class="node-title">Backend</div>
+              <div class="node-sub">Node.js<br/>Agent orchestrator<br/>Tool router</div>
+            </div>
+          </div>
+          <div class="arch-row branches">
+            <div class="arch-node small">
+              <div class="node-title">Sandbox</div>
+              <div class="node-sub">Docker container<br/>No network access</div>
+            </div>
+            <div class="arch-node small">
+              <div class="node-title">SQLite</div>
+              <div class="node-sub">Conversation history</div>
+            </div>
+            <div class="arch-node small">
+              <div class="node-title">LanceDB</div>
+              <div class="node-sub">Vector memory</div>
+            </div>
+            <div class="arch-node small">
+              <div class="node-title">LLM API</div>
+              <div class="node-sub">OpenRouter / Ollama / custom</div>
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          The frontend runs natively (Electron needs the host display).
+          Every other service is containerized and wired together with Docker Compose.
+        </p>
+      </div>
+    </section>
+
+    <!-- Slide 6: Tech Stack -->
+    <section class="slide" data-slide="6">
+      <h2>Tech stack</h2>
+      <div class="content">
+        <table class="stack-table">
+          <thead>
+            <tr><th>Layer</th><th>Technology</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Desktop UI</td><td>Electron, HTML, CSS, JavaScript</td></tr>
+            <tr><td>Backend</td><td>Node.js</td></tr>
+            <tr><td>Database</td><td>SQLite</td></tr>
+            <tr><td>Vector memory</td><td>LanceDB</td></tr>
+            <tr><td>Containerization</td><td>Docker, Docker Compose</td></tr>
+            <tr><td>LLM APIs</td><td>OpenRouter, OpenAI-compatible endpoints</td></tr>
+            <tr><td>Search API</td><td>LangSearch</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Slide 7: Key Concepts -->
+    <section class="slide" data-slide="7">
+      <h2>Key technical concepts</h2>
+      <div class="content">
+        <div class="concept-grid">
+          <div class="concept">
+            <div class="concept-title">Agentic loop</div>
+            <p>A <strong>think &rarr; act &rarr; observe</strong> cycle. The model decides which tool to call, the backend executes it, and the result is fed back as the next observation.</p>
+          </div>
+          <div class="concept">
+            <div class="concept-title">Tool use / function calling</div>
+            <p>The backend exposes tools to the model through the OpenAI tool-calling schema, then routes each call to a safe handler.</p>
+          </div>
+          <div class="concept">
+            <div class="concept-title">Sandboxed execution</div>
+            <p>Generated code never runs on the host. It runs inside a locked-down Docker container with <strong>no network access</strong>.</p>
+          </div>
+          <div class="concept">
+            <div class="concept-title">Vector embeddings</div>
+            <p>Past conversation chunks are embedded and stored in LanceDB so the model can semantically recall context, not just keyword-match it.</p>
+          </div>
+          <div class="concept">
+            <div class="concept-title">Local-first design</div>
+            <p>Conversation history, memory, and keys all live on the user's machine. Nothing is mirrored to a third-party server.</p>
+          </div>
+          <div class="concept">
+            <div class="concept-title">Provider abstraction</div>
+            <p>A single OpenAI-compatible client layer means swapping between OpenRouter, Ollama, or a custom endpoint is a config change.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 8: Demo -->
+    <section class="slide demo-slide" data-slide="8">
+      <div class="content demo-content">
+        <h1 class="demo-title">Demo</h1>
+        <div class="demo-pulse"></div>
+        <p class="demo-sub">Let&rsquo;s see it in action.</p>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="controls">
+    <button id="prev" aria-label="Previous slide">&lsaquo;</button>
+    <span id="counter">1 / 8</span>
+    <button id="next" aria-label="Next slide">&rsaquo;</button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -20,6 +20,8 @@ app.use(express.json());
 
 let currentConversationId = 0;
 
+const lanceDal = require('./dal/lanceDal.js');
+
 
 
 /*
@@ -287,6 +289,12 @@ app.post('/permission', (req, res) => {
     const ok = resolvePermission(id, decision);
     res.json({ ok });
 });
+
+app.post('/getMemory', async (req, res) => {
+    const message = req.body.message;
+    const results = await lanceDal.getMemory(message);
+    res.json({ results });
+})
 
 
 
