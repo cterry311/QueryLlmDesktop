@@ -292,7 +292,7 @@ app.post('/permission', (req, res) => {
 
 app.post('/getMemory', async (req, res) => {
     const message = req.body.message;
-    const results = await lanceDal.getMemory(message);
+    const results = await lanceDal.getMemory(message, 3);
     res.json({ results });
 })
 

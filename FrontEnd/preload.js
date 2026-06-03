@@ -25,5 +25,6 @@ contextBridge.exposeInMainWorld('llm', {
     setApiConfig: (config) => ipcRenderer.invoke('api:set-config', config),
     listConversations: () => ipcRenderer.invoke('conv:list'),
     getConversationMessages: (id) => ipcRenderer.invoke('conv:messages', id),
-    pickDirectory: () => ipcRenderer.invoke('dialog:pick-directory')
+    pickDirectory: () => ipcRenderer.invoke('dialog:pick-directory'),
+    getMemories: (query) => ipcRenderer.invoke('memory:get', query),
 });

@@ -685,3 +685,53 @@ body {
 .dark-theme-options button {
     color: black;
 }
+
+.memories-view {
+    padding: 10px
+}
+
+.memory-search-bar {
+    margin-top: 10px;
+    padding: 0;
+}
+
+.memories-input {
+    flex: 1;
+    resize: none;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--light-gray);
+    background: var(--dark-gray);
+    color: var(--white);
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.memories-search {
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: var(--light-blue);
+    color: var(--white);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.memories-search:hover {
+    background: var(--deep-blue);
+}
+
+.memories-list {
+    list-style: none;
+    padding: 0;
+}
+
+.memory-item {
+    margin-top: 10px;
+    border: 1px solid var(--light-blue);
+    padding: 10px
+}
+
+
+
+

@@ -103,6 +103,20 @@ async function sendPermissionDecision(id, decision) {
     return data
 }
 
+async function getMemory(message) {
+    const res = await fetch(`${BACKEND_URL}/getMemory`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+    })
+    if (!res.ok) {
+        console.error('Failed to get memory:', res.statusText)
+        return []
+    }
+    const data = await res.json()
+    return data.results || []
+}
+
 ipcMain.handle('llm:send', async (_event, message, model, routeId, newConversation, directory) => {
     try {
         return { ok: true, reply: await sendToLLM(message, model, routeId, newConversation, directory) }
@@ -183,6 +197,14 @@ ipcMain.handle('permission:respond', async (_event, id, decision) => {
     try {
         await sendPermissionDecision(id, decision)
         return { ok: true }
+    } catch (err) {
+        return { ok: false, error: err.message }
+    }
+})
+
+ipcMain.handle('memory:get', async (_event, prompt) => {
+    try {
+        return { ok: true, results: await getMemory(prompt) }
     } catch (err) {
         return { ok: false, error: err.message }
     }

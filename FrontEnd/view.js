@@ -484,11 +484,20 @@ const apiSaveBtn = document.getElementById('api-save')
 
 const themeView = document.getElementById('theme-details-view')
 
+const memoryView = document.getElementById('memories-view')
+const memoryInput = document.getElementById('memories-input')
+const memorySearchBtn = document.getElementById('memories-search')
+const memorySearchResults = document.getElementById('memories-list')
+
+const aboutView = document.getElementById('about-view')
+
 function showBaseSettings() {
     settingsTitle.textContent = 'Settings'
     settingsBack.classList.add('hidden')
     apiView.classList.add('hidden')
     themeView.classList.add('hidden')
+    memoryView.classList.add('hidden')
+    aboutView.classList.add('hidden')
     settingsList.classList.remove('hidden')
 }
 
@@ -505,6 +514,20 @@ function showThemeDetails() {
     settingsBack.classList.remove('hidden')
     settingsList.classList.add('hidden')
     themeView.classList.remove('hidden')
+}
+
+function showMemoryDetails() {
+    settingsTitle.textContent = 'Memory'
+    settingsBack.classList.remove('hidden')
+    settingsList.classList.add('hidden')
+    memoryView.classList.remove('hidden')
+}
+
+function showAbout() {
+    settingsTitle.textContent = 'About'
+    settingsBack.classList.remove('hidden')
+    settingsList.classList.add('hidden')
+    aboutView.classList.remove('hidden')
 }
 
 function openSettings() {
@@ -528,9 +551,9 @@ document.querySelectorAll('#settings-list button').forEach((btn) => {
         } else if (key === 'theme') {
             showThemeDetails()
         } else if (key === 'memories') {
-
+            showMemoryDetails()
         } else if (key === 'about') {
-
+            showAbout()
         } else {
             alert(`Settings: "${key}" — not implemented yet.`)
         }
@@ -663,3 +686,31 @@ const fetchedTheme = localStorage.getItem('theme')
 if (fetchedTheme) {
     setTheme(fetchedTheme)
 }
+
+// Memory Searching ----------------------------------------------------------------------
+
+memorySearchBtn.addEventListener('click', async () => {
+    const query = memoryInput.value.trim()
+    if (!query) return
+    const response = await window.llm.getMemories(query)
+    console.log(response)
+    memorySearchResults.innerHTML = ''
+    for (const m of response.results) {
+        const li = document.createElement('li')
+        li.classList.add('memory-item')
+        const content = document.createElement('div')
+        content.classList.add('memory-content')
+        content.textContent = m.text
+        li.appendChild(content)
+        const contextList = document.createElement('ul')
+        contextList.classList.add('memory-context')
+        for (const c of m.context) {
+            const cli = document.createElement('li')
+            cli.textContent = c
+            cli.classList.add('memory-context-item')
+            contextList.appendChild(cli)
+        }
+        li.appendChild(contextList)
+        memorySearchResults.appendChild(li)
+    }
+})
