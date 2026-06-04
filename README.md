@@ -107,7 +107,11 @@ API endpoints and keys are configurable per provider in the application settings
 ```bash
 # Clone the repository
 git clone https://github.com/cterry311/QueryLlmDesktop.git
-cd query
+
+docker compose build
+
+docker model pull ai/mxbai-embed-large
+
 
 # Start all services
 node start.js

@@ -1,0 +1,17 @@
+Fixed a bug in the application where the results of tool calls were not being saved
+
+Added functionality to show what the model is currently doing when it is working
+
+Styled the Scrollbar to look better
+
+Added a nice theme selector, with 8 different themes to choose from
+
+Added an interface in the UI for searching through the models memories and viewing them
+
+Added a menu in the UI that shows you where everything is located using cool boxes that outline the things
+
+Implemented shutdown process, when the electron window is closed, everything shuts down gracefully
+
+Added the Ability to select multiple conversations and get context from them.
+
+fixed a bug where the last line of the response was being deleted, this was so irritating to fix
