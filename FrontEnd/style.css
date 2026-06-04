@@ -776,7 +776,7 @@ body {
     position: absolute;
     top: 6%;
     left: 14.8%;
-    width: 110px;
+    width: 255px;
     height: 32px;
     border-radius: 5%;
     border: 5px solid var(--deep-blue);

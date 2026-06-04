@@ -19,7 +19,10 @@ async function* callModel(context, model, url, key, conversationId, modelId, dir
 
     console.log("context: " + JSON.stringify(context, null, 2))
     const messages = [
-        {'role': 'system', 'content':'you are in an agentic environment, use the tools provided to help the user fulfill their request, use the memory tools frequently to persistently store useful information or check for context on matters'},
+        {'role': 'system', 'content':'you are in an agentic environment, use the tools provided to help the user fulfill their request, ' +
+                'use the memory tools to save relevant information about the user and the current conversation. ' +
+                'each time you receive a response you should consider any important information that you or the user brought up, and depending on it\'s relevance it should be saved to long term or temporary memory.'
+        },
         ...context
     ];
     console.log("messages: " + JSON.stringify(messages, null, 2))
@@ -144,7 +147,7 @@ async function* callModel(context, model, url, key, conversationId, modelId, dir
                 content: assistantContent || null,
             }, conversationId, modelId)
             console.log("finished")
-            console.log("messages: " + JSON.stringify(messages, null, 2))
+            //console.log("messages: " + JSON.stringify(messages, null, 2))
             return;
         }
     }

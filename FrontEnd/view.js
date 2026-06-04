@@ -345,7 +345,9 @@ async function handleSend() {
 
     window.llm.onDone(() => {
         sendBtn.disabled = false;
-        pending.children[pending.children.length - 1].remove();
+        try {
+            pending.removeChild(blurbElement);
+        } catch {}
         inputEl.focus();
     });
 

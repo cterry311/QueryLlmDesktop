@@ -3,6 +3,13 @@ const openrouterURL = "https://openrouter.ai/api/v1/chat/completions"
 const defaultModel = "openrouter/free"
 const imageCapability = new Map()
 
+class ContextSizeError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = 'ContextLimitError';
+    }
+}
+
 async function getResponse(context, model, route, key, stream = false) {
     if (containsImageContent(context)) {
         if (!(await isImageCapable(model, route, key))) {
@@ -87,6 +94,17 @@ async function* agentStream(context, model, url, key, tools, additionalParameter
     });
 
     if (!response.ok) {
+        // try {
+        //     const jsonError = await response.json();
+        //     if (jsonError.error.type === 'exceed_context_size_error') {
+        //         console.log("hit the route where contextSize is too large")
+        //         throw new ContextSizeError("context size exceeded")
+        //     }
+        // } catch (e) {
+        //     if (e instanceof ContextSizeError) {
+        //         throw e
+        //     }
+        // }
         throw new Error(`LLM error ${response.status}: ${await response.text()}`);
     }
 
@@ -134,7 +152,7 @@ async function getOpenrouterModels() {
         return returnData;
     } catch (error) {
         console.error("Error fetching models:", error);
-        throw error;
+        return [];
     }
 }
 

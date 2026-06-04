@@ -8,10 +8,6 @@ Bundle Application into a single executable
     - Bundle the application into a single executable
     - Make sure the application can be run from anywhere
     - if the user does not have docker installed make sure that the sandbox fails gracefully
-Prepare Presentation for the Application
-    Checklist:
-    - Prepare a presentation for the application
-    - Practice what to Demonstrate to cover all bases during presentation
 Context Managment:
     Problem:
     - Context is not being managed right now
