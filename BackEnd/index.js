@@ -119,6 +119,7 @@ app.post('/chat', async (req, res) => {
         const message = req.body?.message;
         const model = req.body?.model;
         const routeId = req.body?.routeId;
+        const addedContext = req.body?.addedContext;
         const newConversation = req.body?.newConversation === true;
         const requestedDirectory = typeof req.body?.directory === 'string' && req.body.directory.trim()
             ? req.body.directory
@@ -133,7 +134,12 @@ app.post('/chat', async (req, res) => {
             currentConversationId = sqlDal.addConversation("temp", requestedDirectory);
         }
         sqlDal.pushMessage({ content: message, role: 'user' }, currentConversationId, null);
-        const context = sqlDal.getConversationById(currentConversationId);
+        let context = sqlDal.getConversationById(currentConversationId);
+
+        for (const conId of addedContext) {
+            const extraContext = sqlDal.getConversationById(conId);
+            context = [...extraContext, ...context]
+        }
 
         const providerInfo = sqlDal.getProviderById(routeId);
         const route = providerInfo.url;
@@ -310,9 +316,6 @@ app.get('/shutdown', (req, res) => {
 
 sqlDal.setup()
 
-setInterval(() => {
-    console.log("Backend is running")
-}, 10000)
 
 
 const PORT = process.env.PORT || 3000;

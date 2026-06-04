@@ -3,8 +3,8 @@ const { contextBridge, ipcRenderer } = require('electron')
 contextBridge.exposeInMainWorld('llm', {
     send: (message, model, routeId, newConversation, directory) =>
         ipcRenderer.invoke('llm:send', message, model, routeId, !!newConversation, directory || null),
-    stream: (message, model, routeId, newConversation, directory) =>
-        ipcRenderer.invoke('llm:stream', message, model, routeId, !!newConversation, directory || null),
+    stream: (message, model, routeId, newConversation, directory, addedContext) =>
+        ipcRenderer.invoke('llm:stream', message, model, routeId, !!newConversation, directory || null, addedContext || []),
     onChunk: (cb) => ipcRenderer.on('llm:chunk', (_e, chunk) => cb(chunk)),
     onMeta: (cb) => ipcRenderer.once('llm:meta', (_e, meta) => cb(meta)),
     onDone: (cb) => ipcRenderer.once('llm:done', cb),

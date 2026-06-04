@@ -79,10 +79,13 @@ function renderConversationList() {
     sidebarListEl.innerHTML = ''
     for (const c of conversations) {
         const li = document.createElement('li')
+
         li.className = 'conversation-item' + (c.id === currentConversationId ? ' active' : '')
+
         li.textContent = c.title
         li.title = c.title
         li.dataset.id = String(c.id)
+
         li.addEventListener('click', () => openConversation(c.id))
         sidebarListEl.appendChild(li)
     }
@@ -103,8 +106,52 @@ function clearMessages() {
     messagesEl.innerHTML = ''
 }
 
+
+
+const attachContextBtn = document.getElementById('add-context-btn')
+let isAddingContext = false
+let addedContext = []
+
+
+attachContextBtn.addEventListener('click', (e) => {
+    isAddingContext = !isAddingContext
+    if (isAddingContext) {
+        attachContextBtn.innerText = "Stop Attaching Conversations"
+    } else {
+        attachContextBtn.innerText = "Attach Conversations"
+    }
+})
+
+
 async function openConversation(id) {
     try {
+        if (isAddingContext) {
+            if (id === currentConversationId) {
+                return;
+            }
+            let item
+            let htmlItem
+            let index = 0
+            for (const c of conversations) {
+                if (c.id === id) {
+                    htmlItem = sidebarListEl.children[index]
+                    item = c
+                }
+                index++;
+            }
+            if (!item) {
+                return
+            }
+            if (addedContext.includes(id)) {
+                addedContext.splice(addedContext.indexOf(id), 1)
+                htmlItem.classList.remove('context-added')
+            } else {
+                addedContext.push(id)
+                htmlItem.classList.add('context-added')
+            }
+            return;
+        }
+        addedContext = []
         const result = await window.llm.getConversationMessages(id)
         if (!result.ok) throw new Error(result.error)
         currentConversationId = id
@@ -313,7 +360,7 @@ async function handleSend() {
         const lastPercent = modelSelect.value.lastIndexOf('%');
         const modelId = modelSelect.value.substring(0, lastPercent);
         const routeId = parseInt(modelSelect.value.substring(lastPercent + 1));
-        await window.llm.stream(content, modelId || 'openrouter/free', routeId || 0, isNewConversation, directoryForRequest); //TODO: have it switch form string to array if image content is included
+        await window.llm.stream(content, modelId || 'openrouter/free', routeId || 0, isNewConversation, directoryForRequest, addedContext); //TODO: have it switch form string to array if image content is included
     } catch (err) {
         pending.classList.remove('pending')
         pending.textContent = `Error: ${err.message}`

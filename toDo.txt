@@ -1,7 +1,3 @@
-Closing the UI shuts down the application
-    Checklist:
-    - Have a way of detecting when the UI is closed
-    - Shut down the application when the UI is closed
 Implement Tool for Generating Images
     Checklist:
     - Implement the tool in the backend

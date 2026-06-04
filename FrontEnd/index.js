@@ -26,7 +26,7 @@ app.whenReady().then(createWindow)
 
 const BACKEND_URL = 'http://localhost:3000'
 
-async function sendToLLM(message, model, routeId, newConversation, directory, onChunk, onMeta, onPermission, onBlurb) {
+async function sendToLLM(message, model, routeId, newConversation, directory, addedContext, onChunk, onMeta, onPermission, onBlurb) {
     const res = await fetch(`${BACKEND_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -34,6 +34,7 @@ async function sendToLLM(message, model, routeId, newConversation, directory, on
             message,
             model,
             routeId,
+            addedContext,
             newConversation: !!newConversation,
             directory: directory || null,
             stream: !!onChunk
@@ -132,7 +133,7 @@ ipcMain.handle('llm:send', async (_event, message, model, routeId, newConversati
 });
 
 // New streaming handler — sends chunks as events back to the renderer
-ipcMain.handle('llm:stream', async (event, message, model, routeId, newConversation, directory) => {
+ipcMain.handle('llm:stream', async (event, message, model, routeId, newConversation, directory, addedContext) => {
     try {
         await sendToLLM(
             message,
@@ -140,6 +141,7 @@ ipcMain.handle('llm:stream', async (event, message, model, routeId, newConversat
             routeId,
             newConversation,
             directory,
+            addedContext,
             (chunk) => { event.sender.send('llm:chunk', chunk); },
             (meta) => { event.sender.send('llm:meta', meta); },
             (perm) => { event.sender.send('llm:permission', perm); },
@@ -216,6 +218,3 @@ ipcMain.handle('memory:get', async (_event, prompt) => {
     }
 })
 
-setInterval(() => {
-    console.log("Frontend is running")
-}, 10000)
