@@ -94,17 +94,17 @@ async function* agentStream(context, model, url, key, tools, additionalParameter
     });
 
     if (!response.ok) {
-        // try {
-        //     const jsonError = await response.json();
-        //     if (jsonError.error.type === 'exceed_context_size_error') {
-        //         console.log("hit the route where contextSize is too large")
-        //         throw new ContextSizeError("context size exceeded")
-        //     }
-        // } catch (e) {
-        //     if (e instanceof ContextSizeError) {
-        //         throw e
-        //     }
-        // }
+        try {
+            const jsonError = await response.json();
+            if (jsonError.error.type === 'exceed_context_size_error') {
+                console.log("hit the route where contextSize is too large")
+                throw new ContextSizeError("context size exceeded")
+            }
+        } catch (e) {
+            if (e instanceof ContextSizeError) {
+                throw e
+            }
+        }
         throw new Error(`LLM error ${response.status}: ${await response.text()}`);
     }
 
@@ -251,4 +251,4 @@ function purgeImageContent(context) {
 
 
 
-module.exports = { chat: getResponse, getOpenrouterModels, getTitle, agentStream };
+module.exports = { chat: getResponse, getOpenrouterModels, getTitle, agentStream, ContextSizeError };

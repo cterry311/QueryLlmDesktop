@@ -15,3 +15,4 @@ Implemented shutdown process, when the electron window is closed, everything shu
 Added the Ability to select multiple conversations and get context from them.
 
 fixed a bug where the last line of the response was being deleted, this was so irritating to fix
+
