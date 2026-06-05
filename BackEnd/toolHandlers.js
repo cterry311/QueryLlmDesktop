@@ -8,6 +8,12 @@ const lanceDal = require('./dal/lanceDal.js')
 const NO_DIRECTORY_MESSAGE = "This tool is not available for use because no directory is attached to this conversation.";
 const OUT_OF_SCOPE_MESSAGE = "The requested path is outside the conversation's selected directory and cannot be accessed.";
 
+/**
+ * Resolve a path relative to a root directory, ensuring it is within the root.
+ * @param rootDir{string} the root directory
+ * @param requested{string} the path to resolve, relative to the root
+ * @returns {string|null} {string|null} the resolved path, or null if the path is outside the root
+ */
 function resolveSafePath(rootDir, requested) {
     if (typeof requested !== 'string' || requested.length === 0) return null;
     const root = path.resolve(rootDir);
@@ -16,6 +22,16 @@ function resolveSafePath(rootDir, requested) {
     return candidate;
 }
 
+/**
+ * Recursively build a directory tree. it skips node_modules and .git folders
+ * @param dir{string} the directory to build the tree for
+ * @param base{string} the root directory to build paths relative to
+ * @param depth{number} the current depth of the tree, used to limit recursion depth
+ * @param maxDepth{number} the maximum depth of the tree, used to limit recursion depth
+ * @param maxEntries{number} the maximum number of entries to include in the tree
+ * @param counter{number} the current number of entries included in the tree
+ * @returns {Promise<{name: string, type: string, error}|{name, path, type: string, children: *[]}|{name: string, type: string, truncated: boolean}>} the built tree
+ */
 async function buildTree(dir, base, depth, maxDepth, maxEntries, counter) {
     console.log(`depth ${depth} typeof depth ${typeof depth}, max depth ${maxDepth} typeof Maxdepth ${typeof maxDepth}`)
     if (depth > maxDepth) return { name: path.basename(dir), type: 'directory', truncated: true };

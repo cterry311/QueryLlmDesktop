@@ -3,6 +3,9 @@ const openrouterURL = "https://openrouter.ai/api/v1/chat/completions"
 const defaultModel = "openrouter/free"
 const imageCapability = new Map()
 
+/**
+ * A custom error class for when the context window is exceeded
+ */
 class ContextSizeError extends Error {
     constructor(message) {
         super(message);
@@ -10,6 +13,15 @@ class ContextSizeError extends Error {
     }
 }
 
+/**
+ * Get a response from the LLM
+ * @param context{Array[Object]} - The context of the conversation in the openAI format
+ * @param model{string} - The model to use
+ * @param route{string} - The route to use
+ * @param key{string} - The key to use
+ * @param stream{boolean} - Whether to stream the response or not
+ * @returns {Promise<AsyncGenerator<string, void, *>|*>} - either a streamed response, or a promise that resolves to the response
+ */
 async function getResponse(context, model, route, key, stream = false) {
     if (containsImageContent(context)) {
         if (!(await isImageCapable(model, route, key))) {
@@ -68,6 +80,16 @@ async function getResponse(context, model, route, key, stream = false) {
     })();
 }
 
+/**
+ * Stream a response from the LLM, with the ability to make tool calls
+ * @param context{Array[Object]} - The context of the conversation in the openAI format
+ * @param model{string} - The model to use
+ * @param url{string} - The URL to use for the request
+ * @param key{string} - The key to use
+ * @param tools{Array[Object]} - The tools to use, in the openAI format
+ * @param additionalParameters{Object} - Additional parameters to pass to the request, in the openAI format { max_tokens: number}
+ * @returns {AsyncGenerator<any, void, *>} - An async generator that yields the response chunks
+ */
 async function* agentStream(context, model, url, key, tools, additionalParameters = {}) {
     if (containsImageContent(context)) {
         if (!(await isImageCapable(model, url, key))) {
@@ -124,6 +146,10 @@ async function* agentStream(context, model, url, key, tools, additionalParameter
     }
 }
 
+/**
+ * gets the list of all models available through openrouter
+ * @returns {Promise<*[]>} - a promise that resolves to an array of models
+ */
 async function getOpenrouterModels() {
     try {
         const response = await fetch("https://openrouter.ai/api/v1/models", {
@@ -156,6 +182,14 @@ async function getOpenrouterModels() {
     }
 }
 
+/**
+ * gets the title for the conversation provided
+ * @param context{Array[Object]} - The context of the conversation in the openAI format
+ * @param model{string} - The model to use
+ * @param route{string} - the route to use
+ * @param key{string} - the key to use
+ * @returns {Promise<string>} - a promise that resolves to the title of the conversation
+ */
 async function getTitle(context, model, route, key) {
     if (containsImageContent(context)) {
         if (!(await isImageCapable(model, route, key))) {
@@ -169,6 +203,13 @@ async function getTitle(context, model, route, key) {
     return response.trim();
 }
 
+/**
+ * checks if the model is capable of handling image content, pings the model with a 1 pixle image with max_tokens limited to 1, if a sucessful response is gotten, then the model is capable of handling images
+ * @param model{string} - the model to check
+ * @param route{string} - the route to use
+ * @param key{string} - the key to use
+ * @returns {Promise<boolean>} - a promise that resolves to true if the model is capable of handling image content, false otherwise
+ */
 async function isImageCapable(model, route, key) {
     if (imageCapability.has(model + " " + route)) {
         return imageCapability.get(model + " " + route);
@@ -212,6 +253,11 @@ async function isImageCapable(model, route, key) {
     return false;
 }
 
+/**
+ * checks if the context contains image content
+ * @param context{Array[Object]} - The context of the conversation in the openAI format
+ * @returns {boolean} - true if the context contains image content, false otherwise
+ */
 function containsImageContent(context) {
     for (const message of context) {
         if (Array.isArray(message.content)) {
@@ -225,6 +271,11 @@ function containsImageContent(context) {
     return false;
 }
 
+/**
+ * removes all image content from the context
+ * @param context{Array[Object]} - the context of the conversation in the openAI format
+ * @returns {Array[Object]} - the context in the openAI format without image content
+ */
 function purgeImageContent(context) {
     const newMessages = []
     for (const message of context) {

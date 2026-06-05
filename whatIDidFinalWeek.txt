@@ -16,3 +16,4 @@ Added the Ability to select multiple conversations and get context from them.
 
 fixed a bug where the last line of the response was being deleted, this was so irritating to fix
 
+added documentation for each method in the backend and frontend

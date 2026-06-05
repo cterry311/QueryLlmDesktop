@@ -5,6 +5,12 @@ const sqlDal = require('./dal/sqlDal');
 
 const permissionResolvers = new Map();
 
+/**
+ * Resolves a permission request by id
+ * @param id{string} - The id of the permission request
+ * @param decision{string} - The decision to make, either 'allow' or 'deny'
+ * @returns {boolean} - True if the permission request was resolved, false otherwise
+ */
 function resolvePermission(id, decision) {
     const resolver = permissionResolvers.get(id);
     if (resolver) {
@@ -15,6 +21,18 @@ function resolvePermission(id, decision) {
     return false;
 }
 
+/**
+ * Calls the model with the given context in an agentic enviorment, it will yield it's streamed content from the model in addition to any permission requests or tools the model called
+ * @param context{Array[Object]} - The context to pass to the model, should be in the format of [{ role: 'user', content: 'Hello' }, { role: 'assistant', content: 'Hi'}]
+ * @param model{string} - the model to call
+ * @param url{string} - the endpoint to call the model at
+ * @param key{string} - the API key to be passed to the endpoint
+ * @param conversationId{bigint} - the id of the conversation the models processes will be saved to
+ * @param modelId{bigint} - the id of the model the conversation is using, this is used to save the conversation to the database
+ * @param directory{string|null} - the working directory for the model to opperate in, if null, tool calls requiring directory will be automtically denyed
+ * @param maxIterations{number} - the maximum number of iterations the model will make, if max_itterations is reached the model will stop making tool calls and be forced to make a final response
+ * @returns {AsyncGenerator<{_type: string, tool: unknown, blurb: *}|{_type: string, id: `${string}-${string}-${string}-${string}-${string}`, tool: unknown, args: {}}|any, void, *>} - an async generator that yields the model's streamed content, permission requests, and tool calls'
+ */
 async function* callModel(context, model, url, key, conversationId, modelId, directory = null, maxIterations = 15) {
 
     console.log("context: " + JSON.stringify(context, null, 2))

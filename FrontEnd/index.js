@@ -1,7 +1,9 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron')
 const path = require('path')
 
-
+/**
+ * Creates the electron window
+ */
 function createWindow() {
     const win = new BrowserWindow({
         width: 1100,
@@ -26,6 +28,20 @@ app.whenReady().then(createWindow)
 
 const BACKEND_URL = 'http://localhost:3000'
 
+/**
+ * sends a message to the LLM, either in a non-streaming or streaming fashion
+ * @param message{string} the message to send
+ * @param model{string} the model to send the message to
+ * @param routeId{bigint} the id of the route to send the message to
+ * @param newConversation{boolean} whether or not to start a new conversation
+ * @param directory{string|null} the directory to save the conversation to, if any
+ * @param addedContext{Array[bigint]} an array of additional conversationIds to to add to the conversation context
+ * @param onChunk{function(string)} a function to executed when a chunk of the response is received
+ * @param onMeta{function(string)} a function to executed when the meta data of the response is received
+ * @param onPermission{function(string)} a function to executed when a permission request is received
+ * @param onBlurb{function(string)} a function to be called when a tool call is received
+ * @returns {Promise<*>}
+ */
 async function sendToLLM(message, model, routeId, newConversation, directory, addedContext, onChunk, onMeta, onPermission, onBlurb) {
     const res = await fetch(`${BACKEND_URL}/chat`, {
         method: 'POST',
@@ -74,6 +90,10 @@ async function sendToLLM(message, model, routeId, newConversation, directory, ad
     }
 }
 
+/**
+ * gets a list of all the models availible to choose from
+ * @returns {Promise<*>}
+ */
 async function listModels() {
     const res = await fetch(`${BACKEND_URL}/models`)
     const data = await res.json()
@@ -81,6 +101,10 @@ async function listModels() {
     return data.models
 }
 
+/**
+ * gets a list of all the conversations
+ * @returns {Promise<*|Record<string, SQLOutputValue>[]>}
+ */
 async function listConversations() {
     const res = await fetch(`${BACKEND_URL}/conversations`)
     const data = await res.json()
@@ -88,6 +112,11 @@ async function listConversations() {
     return data.conversations
 }
 
+/**
+ * gets an array of all the messages in a conversation in the openAI format
+ * @param id{ bigint} the id of the conversation to get the messages of
+ * @returns {Promise<any>}
+ */
 async function getConversationMessages(id) {
     const res = await fetch(`${BACKEND_URL}/conversations/messages`, {
         method: 'POST',
@@ -99,6 +128,12 @@ async function getConversationMessages(id) {
     return data
 }
 
+/**
+ * sends a permission decision to the backend
+ * @param id{string} the id of the permission request
+ * @param decision{string} the decision to make, either "allow" or "deny"
+ * @returns {Promise<any>}
+ */
 async function sendPermissionDecision(id, decision) {
     const res = await fetch(`${BACKEND_URL}/permission`, {
         method: 'POST',
@@ -110,6 +145,11 @@ async function sendPermissionDecision(id, decision) {
     return data
 }
 
+/**
+ * gets the memory of the LLM, given a prompt
+ * @param message{string} the message to match memories against
+ * @returns {Promise<[]|*|AuthenticationExtensionsPRFValues|*[]|*[]>}
+ */
 async function getMemory(message) {
     const res = await fetch(`${BACKEND_URL}/getMemory`, {
         method: 'POST',

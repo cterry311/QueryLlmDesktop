@@ -114,6 +114,9 @@ app.post('/chat', async (req, res) => {
 });
 */
 
+/**
+ * Calls the model with the given conversationID, model and provider, it will stream the models response and any permission request and tool calls the model makes
+ */
 app.post('/chat', async (req, res) => {
     try {
         const message = req.body?.message;
@@ -203,6 +206,9 @@ app.post('/chat', async (req, res) => {
     }
 });
 
+/**
+ * gets all models that are available to the user
+ */
 app.get('/models', async (_req, res) => {
     try {
         console.log("getting models")
@@ -240,6 +246,10 @@ app.get('/models', async (_req, res) => {
     }
 });
 
+
+/**
+ * adds a model/provider to the database
+ */
 app.post('/models', async (req, res) => {
     try {
         let models = req.body
@@ -266,11 +276,17 @@ app.post('/models', async (req, res) => {
     }
 })
 
+/**
+ * gets all conversations that the user has
+ */
 app.get('/conversations', (_req, res) => {
     const conversations = sqlDal.getConversations();
     res.json({ conversations: conversations });
 });
 
+/**
+ * gets all the messages in a conversation, note that this ist the display version of the messages
+ */
 app.post('/conversations/messages', (req, res) => {
     const id = req.body?.id;
     if (typeof id !== 'number') {
@@ -286,6 +302,9 @@ app.post('/conversations/messages', (req, res) => {
     res.json({ id, title, messages, directory });
 });
 
+/**
+ * the route to call to resolve a permission request, the id is the id of the permission request, the decision is either 'allow' or 'deny'
+ */
 app.post('/permission', (req, res) => {
     const id = req.body?.id;
     const decision = req.body?.decision;
@@ -296,6 +315,9 @@ app.post('/permission', (req, res) => {
     res.json({ ok });
 });
 
+/**
+ * gets 3 memories from the database, the messages best matching the messgae provided
+ */
 app.post('/getMemory', async (req, res) => {
     const message = req.body.message;
     const results = await lanceDal.getMemory(message, 3);
@@ -304,6 +326,9 @@ app.post('/getMemory', async (req, res) => {
 
 let server;
 
+/**
+ * shuts down the backend
+ */
 app.get('/shutdown', (req, res) => {
     server.close(async () => {
         console.log('Backend Shutting down')

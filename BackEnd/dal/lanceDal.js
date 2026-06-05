@@ -26,6 +26,11 @@ const memTable = db.then( async (db) => {
     return table
 })
 
+/**
+ * gets the vector embedding of the provided text
+ * @param text{string} the text to embed
+ * @returns {Promise<Array[number]>} the embedding
+ */
 async function getEmbedding(text) {
     const response = await fetch("http://localhost:12434/engines/llama.cpp/v1/embeddings", {
         method: "POST",
@@ -42,6 +47,12 @@ async function getEmbedding(text) {
     return data.data[0].embedding;
 }
 
+/**
+ * pushes a new memory to the database
+ * @param text{string} the text to be embedded and stored as the main content of the memory
+ * @param additionalContext{Array[string]} additional context added to the memory not fit to be in the main content
+ * @returns {Promise<{success: boolean}>} a promise that resolves to true if the memory was successfully pushed
+ */
 async function pushMemory(text, additionalContext) {
     const table = await memTable;
     const record = {
@@ -56,6 +67,12 @@ async function pushMemory(text, additionalContext) {
     return { success: true}
 }
 
+/**
+ * gets the top n matching memories to the query
+ * @param query{string} the text to match to the main content of the memories, will be embedded and compared to the stored vectors
+ * @param numResults{number} the number of memories to return
+ * @returns {Promise<*[]>} an array of memories that match the query, in order of similarity to the query
+ */
 async function getMemory(query, numResults) {
     const table = await memTable
     const embedding = await getEmbedding(query)
@@ -72,6 +89,12 @@ async function getMemory(query, numResults) {
     return onlyContent
 }
 
+/**
+ * adds additional context to an existing memory
+ * @param id{string} the id of the memory to add context to
+ * @param newContext{Array[string]} the context to add, will be appended to the existing context of the memory
+ * @returns {Promise<{success: boolean}|{error: string}>} a promise that resolves to true if the context was successfully added, or an error message if the memory was not found
+ */
 async function addContext(id, newContext) {
     // Query for the existing record
     const results = await memTable
@@ -96,6 +119,11 @@ async function addContext(id, newContext) {
     return { success: true };
 }
 
+/**
+ * clears the context of an existing memory
+ * @param id{string} the id of the memory to clear the context of
+ * @returns {Promise<{success: boolean}|{error: string}>} a promise that resolves to true if the context was successfully cleared, or an error message if the memory was not found
+ */
 async function clearContext(id) {
     // Query for the existing record
     const results = await memTable
@@ -117,6 +145,11 @@ async function clearContext(id) {
     return { success: true };
 }
 
+/**
+ * removes a memory from the database
+ * @param id{string} the id of the memory to remove
+ * @returns {Promise<{success: boolean}>} a promise that resolves to true if the memory was successfully removed
+ */
 async function removeMemory(id) {
     const table = await memTable
     await table.delete(`id = '${id}'`);

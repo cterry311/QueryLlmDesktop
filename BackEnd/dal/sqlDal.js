@@ -225,6 +225,9 @@ fs.mkdirSync(dataDir, { recursive: true })
 
 const db = new Database(path.join(dataDir, 'database.db'), { verbose: console.log })
 
+/**
+ * creates the database tables if they don't exist, adds openrouter to the providers table if it is not there already
+ */
 function setup() {
     db.exec(`
       CREATE TABLE IF NOT EXISTS conversations (
@@ -302,6 +305,10 @@ function setup() {
     }
 }
 
+/**
+ * Refreshes the models table with the models from the openrouter provider, insterts all the models from the openrouter provider and replaces them with the new models
+ * @param models{Array<Object>} - array of objects containing the model_id
+ */
 function refreshOpenRouterModels(models) {
     console.log(JSON.stringify(models, null, 2))
     const openRouterId = db.prepare(`
@@ -321,6 +328,12 @@ function refreshOpenRouterModels(models) {
     }
 }
 
+/**
+ * adds a provider to the providers table if it does not exist already, returns the id of the provider
+ * @param url{string} - the url of the provider, e.g. { "url": "https://openrouter.ai/api/v1/chat/completions"}
+ * @param apiKey{string} - the api key of the provider
+ * @returns {number|bigint|string|Uint8Array<ArrayBuffer>} the id of the provider
+ */
 function addProvider(url, apiKey) {
     const providerExists = db.prepare(`
         SELECT id
@@ -335,6 +348,12 @@ function addProvider(url, apiKey) {
     return providerId;
 }
 
+/**
+ * adds a model to the models table if it does not exist already, returns the id of the model
+ * @param modelId{string} the model_id of the model
+ * @param providerId{number|bigint|string|Uint8Array<ArrayBuffer>} the id of the provider that the model belongs to, e.g. { "provider_id": 1}
+ * @returns {number|bigint|string|Uint8Array<ArrayBuffer>} the id of the model
+ */
 function addModel(modelId, providerId) {
     const modelExists = db.prepare(`
         SELECT id
@@ -354,6 +373,11 @@ function addModel(modelId, providerId) {
     return id;
 }
 
+/**
+ * returns an array of objects containing the id, model_id, and provider_id of all the models in the models table
+ * @param includeOpenRouter {boolean} - if true, includes the openrouter models, if false, excludes the openrouter models
+ * @returns {Record<string, SQLOutputValue>[]} - an array of objects containing the id, model_id, and provider_id of all the models in the models table
+ */
 function getModels(includeOpenRouter = false) {
     if (includeOpenRouter) {
         return db.prepare(`
@@ -390,7 +414,11 @@ messages: [
 */
 
 
-// For sending to the model - includes tool calls and tool results reconstructed correctly
+/**
+ * returns an array of objects that is the conversation history of the conversation with the given id
+ * @param id{number|bigint|string|Uint8Array<ArrayBuffer>} - the id of the conversation
+ * @returns {({role: string, content: number | bigint | string | Uint8Array<ArrayBuffer>}|{role: string, tool_call_id: *, content: *}|{role: *, content: *})[]} - an array of message objects in the OpenAI compatable format
+ */
 function getConversationById(id) {
     const messages = db.prepare(`
         SELECT id, speaker_role as "role", content
@@ -474,6 +502,12 @@ function getConversationForDisplay(id) {
     return result;
 }
 */
+
+/**
+ * gets the conversation history of the conversation for display, tool messages and calls are excluded
+ * @param id{number|bigint|string|Uint8Array<ArrayBuffer>} - the id of the conversation
+ * @returns {*[]} an array of message objects in the OpenAI compatable format
+ */
 function getConversationForDisplay(id) {
     const unfilteredMessages = getConversationById(id);
     const filteredMessages = []
@@ -498,6 +532,12 @@ function getConversationForDisplay(id) {
     return filteredMessages;
 }
 
+/**
+ * adds a conversation to the conversations table, returns the id of the conversation
+ * @param title{string} - the title of the conversation
+ * @param directory{string} - the directory of the conversation
+ * @returns {number | bigint} - the id of the conversation
+ */
 function addConversation(title, directory) {
     const conversationId = db.prepare(`
         INSERT INTO conversations (title, created_at, updated_at, directory)
@@ -506,6 +546,13 @@ function addConversation(title, directory) {
     return conversationId;
 }
 
+/**
+ * pushes a message to the given conversation, returns the id of the message
+ * @param message{Object} - the message to push, in the OpenAI compatable format, e.g. { "role": "user", "content": "Hello!"}
+ * @param conversationId{number | bigint} - the id of the conversation to push the message to
+ * @param modelId{number | bigint} - the id of the model that generated the message
+ * @returns {number | bigint} - the id of the message
+ */
 function pushMessage(message, conversationId, modelId) {
     console.log("pushing message")
     console.log(JSON.stringify(message, null, 2))
@@ -571,6 +618,10 @@ function pushMessage(message, conversationId, modelId) {
     return messageId;
 }
 
+/**
+ * returns an array of objects containing the id and title of all the conversations in the conversations table
+ * @returns {Record<string, SQLOutputValue>[]} - an array of objects containing the id and title of all the conversations in the conversations table
+ */
 function getConversations() {
     return db.prepare(`
         SELECT id, title FROM conversations
@@ -578,6 +629,11 @@ function getConversations() {
     `).all();
 }
 
+/**
+ * returns an object containing the url and api_key of the provider with the given id
+ * @param id{number|bigint|string|Uint8Array<ArrayBuffer>} - the id of the provider
+ * @returns {Record<string, SQLOutputValue>} - an object containing the url and api_key of the provider with the given id
+ */
 function getProviderById(id) {
     if (id === 0) {
         return db.prepare(`
@@ -591,6 +647,11 @@ function getProviderById(id) {
     `).get(id);
 }
 
+/**
+ * updates the title of the conversation with the given id
+ * @param id{number|bigint|string|Uint8Array<ArrayBuffer>} - the id of the conversation
+ * @param title{string} - the new title of the conversation
+ */
 function updateConversationTitle(id, title) {
     console.log("updating conversation title")
     console.log(id)
@@ -603,6 +664,11 @@ function updateConversationTitle(id, title) {
     `).run(title, id);
 }
 
+/**
+ * gets the directory of the conversation with the given id
+ * @param id {number|bigint|string|Uint8Array<ArrayBuffer>} - the id of the conversation
+ * @returns {string|null} - the directory of the conversation with the given id, or null if the conversation does not exist
+ */
 function getConversationDirectory(id) {
     const row = db.prepare(`SELECT directory FROM conversations WHERE id = ?`).get(id);
     return row?.directory ?? null;
